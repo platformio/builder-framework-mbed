@@ -195,7 +195,8 @@ def get_build_flags(data):
 
 
 def _mbed_whole_archive_hook(libs_):
-    if (not isinstance(libs_, list) or env.subst("$PLATFORM") != "ststm32"):
+    if (not isinstance(libs_, list) or
+            env.subst("$PLATFORM") == "nordicnrf51"):
         return libs_
 
     _dynlibs = []
