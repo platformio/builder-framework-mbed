@@ -68,7 +68,7 @@ MBED_VARIANTS = {
     "samr21_xpro": "SAMR21G18A",
     "saml21_xpro_b": "SAML21J18A",
     "samd21_xpro": "SAMD21J18A",
-    "bbcmicrobit": "NRF51822"
+    "bbcmicrobit": "NRF51_MICROBIT"
 }
 
 MBED_LIBS_MAP = {
@@ -142,10 +142,28 @@ def add_mbedlib(libname, libar):
         "lwip-sys"
     )
 
+    target_map = {
+        "nxplpc": "NXP",
+        "freescalekinetis": "Freescale",
+        "ststm32": "STM"
+    }
+
+    target_includes = (
+        "TARGET_%s" % target_map.get(
+            env.get("BOARD_OPTIONS", {}).get("platform", ""), ""),
+        "TARGET_%s" % variant,
+        "TARGET_CORTEX_M"
+    )
+
     for root, _, files in walk(lib_dir):
         if (not any(f.endswith(".h") for f in files) and
                 basename(root) not in sysincdirs):
             continue
+
+        if "TARGET_" in root:
+            if all([p not in root.upper() for p in target_includes]):
+                continue
+
         var_dir = join("$BUILD_DIR", "FrameworkMbed%sInc%d" %
                        (libname.upper(), crc32(root)))
         if var_dir in env.get("CPPPATH"):
@@ -179,6 +197,11 @@ def parse_eix_file(filename):
             _nkeys = node.keys()
             result[key].append(
                 node.get(_nkeys[0]) if len(_nkeys) == 1 else node.attrib)
+
+    if "LINKFLAGS" in result:
+        for i, flag in enumerate(result["LINKFLAGS"]):
+            if flag.startswith("-u "):
+                result["LINKFLAGS"][i] = result["LINKFLAGS"][i].split(" ")
 
     return result
 
