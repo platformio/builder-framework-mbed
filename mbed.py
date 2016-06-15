@@ -149,8 +149,7 @@ def add_mbedlib(libname, libar):
     }
 
     target_includes = (
-        "TARGET_%s" % target_map.get(
-            env.get("BOARD_OPTIONS", {}).get("platform", ""), ""),
+        "TARGET_%s" % target_map.get(env.subst("$PLATFORM"), ""),
         "TARGET_%s" % variant,
         "TARGET_CORTEX_M"
     )
