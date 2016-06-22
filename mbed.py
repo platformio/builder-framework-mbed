@@ -262,11 +262,11 @@ env.Replace(
 
 # restore external build flags
 if "build.extra_flags" in env.BoardConfig():
-    env.ProcessFlags([env.BoardConfig().get("build.extra_flags")])
+    env.ProcessFlags(env.BoardConfig().get("build.extra_flags"))
 # remove base flags
 env.ProcessUnFlags(env.get("BUILD_UNFLAGS"))
 # apply user flags
-env.ProcessFlags([env.get("BUILD_FLAGS")])
+env.ProcessFlags(env.get("BUILD_FLAGS"))
 
 # Hook for K64F and K22F
 if board_type in ("frdm_k22f", "frdm_k64f"):
