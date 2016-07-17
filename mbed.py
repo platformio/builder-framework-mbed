@@ -149,7 +149,7 @@ def add_mbedlib(libname, libar):
     }
 
     target_includes = (
-        "TARGET_%s" % target_map.get(env.subst("$PLATFORM"), ""),
+        "TARGET_%s" % target_map.get(env.subst("$PIOPLATFORM"), ""),
         "TARGET_%s" % variant,
         "TARGET_CORTEX_M"
     )
@@ -218,7 +218,7 @@ def get_build_flags(data):
 
 def _mbed_whole_archive_hook(libs_):
     if (not isinstance(libs_, list) or
-            env.subst("$PLATFORM") == "nordicnrf51"):
+            env.subst("$PIOPLATFORM") == "nordicnrf51"):
         return libs_
 
     _dynlibs = []
