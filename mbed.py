@@ -83,7 +83,7 @@ MBED_LIBS_MAP = {
 
 def get_mbedlib_includes():
     result = []
-    for lib in MBED_LIBS_MAP.keys():
+    for lib in MBED_LIBS_MAP:
         includes = []
         lib_dir = join(FRAMEWORK_DIR, "libs", lib)
         for _, _, files in walk(lib_dir):
