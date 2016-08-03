@@ -40,7 +40,7 @@ from SCons.Script import DefaultEnvironment
 
 env = DefaultEnvironment()
 
-FRAMEWORK_DIR = env.DevPlatform().get_package_dir("framework-mbed")
+FRAMEWORK_DIR = env.PioPlatform().get_package_dir("framework-mbed")
 assert isdir(FRAMEWORK_DIR)
 
 MBED_VARIANTS = {
