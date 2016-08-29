@@ -26,15 +26,17 @@ the mbed Developer Community.
 http://mbed.org/
 """
 
-from __future__ import print_function
-
-import json
-import re
 import sys
+from copy import copy
 import xml.etree.ElementTree as ElementTree
 from binascii import crc32
-from os import walk
-from os.path import basename, isdir, isfile, join, normpath
+import json
+from os import walk, listdir
+from os.path import basename, isdir, isfile, join, relpath
+
+
+from platformio.builder.tools.platformio import SRC_BUILD_EXT, SRC_HEADER_EXT
+from platformio.builder.tools.piolib import PlatformIOLibBuilder
 
 from SCons.Script import DefaultEnvironment
 
@@ -72,105 +74,6 @@ MBED_VARIANTS = {
     "bbcmicrobit": "NRF51_MICROBIT"
 }
 
-MBED_LIBS_MAP = {
-    "dsp": {"ar": ["dsp", "cmsis_dsp"]},
-    "eth": {"ar": ["eth"], "deps": ["rtos"]},
-    "fat": {"ar": ["fat"]},
-    "rtos": {"ar": ["rtos", "rtx"]},
-    "usb": {"ar": ["USBDevice"]},
-    "usb_host": {"ar": ["USBHost"]}
-}
-
-
-def get_mbedlib_includes():
-    result = []
-    for lib in MBED_LIBS_MAP:
-        includes = []
-        lib_dir = join(FRAMEWORK_DIR, "libs", lib)
-        for _, _, files in walk(lib_dir):
-            for libfile in files:
-                if libfile.endswith(".h"):
-                    includes.append(libfile)
-        result.append((lib, set(includes)))
-    return result
-
-
-def get_used_mbedlibs():
-    re_includes = re.compile(r"^(#include\s+(?:\<|\")([^\r\n\"]+))",
-                             re.M | re.I)
-    srcincs = []
-    for root, _, files in walk(env.get("PROJECTSRC_DIR")):
-        for pfile in files:
-            if not any([pfile.endswith(ext) for ext in (".h", ".c", ".cpp")]):
-                continue
-            with open(join(root, pfile)) as fp:
-                srcincs.extend([i[1] for i in re_includes.findall(fp.read())])
-    srcincs = set(srcincs)
-
-    result = {}
-    for libname, libincs in get_mbedlib_includes():
-        if libincs & srcincs and libname not in result:
-            result[libname] = MBED_LIBS_MAP[libname]
-
-    return result
-
-
-def add_mbedlib(libname, libar):
-    if libar in env.get("LIBS"):
-        return
-
-    lib_dir = join(FRAMEWORK_DIR, "libs", libname)
-    if not isfile(join(lib_dir, "TARGET_%s" % variant,
-                       "TOOLCHAIN_GCC_ARM", "lib%s.a" % libar)):
-        print(
-            "Warning: %s board doesn't have native support for '%s' library!" %
-            (env.get("BOARD"), libname), file=sys.stderr)
-        return
-
-    env.Append(
-        LIBPATH=[
-            join(FRAMEWORK_DIR, "libs", libname,
-                 "TARGET_%s" % variant, "TOOLCHAIN_GCC_ARM")
-        ],
-        LIBS=[libar]
-    )
-
-    sysincdirs = (
-        "eth",
-        "include",
-        "ipv4",
-        "lwip-eth",
-        "lwip-sys"
-    )
-
-    target_map = {
-        "nxplpc": "NXP",
-        "freescalekinetis": "Freescale",
-        "ststm32": "STM"
-    }
-
-    target_includes = (
-        "TARGET_%s" % target_map.get(env.subst("$PIOPLATFORM"), ""),
-        "TARGET_%s" % variant,
-        "TARGET_CORTEX_M"
-    )
-
-    for root, _, files in walk(lib_dir):
-        if (not any(f.endswith(".h") for f in files) and
-                basename(root) not in sysincdirs):
-            continue
-
-        if "TARGET_" in root:
-            if all([p not in root for p in target_includes]):
-                continue
-
-        var_dir = join("$BUILD_DIR", "FrameworkMbed%sInc%d" %
-                       (libname.upper(), crc32(root)))
-        if var_dir in env.get("CPPPATH"):
-            continue
-        env.VariantDirWrap(var_dir, root)
-        env.Append(CPPPATH=[var_dir])
-
 
 def parse_eix_file(filename):
     result = {}
@@ -199,6 +102,8 @@ def parse_eix_file(filename):
                 node.get(_nkeys[0]) if len(_nkeys) == 1 else node.attrib)
 
     if "LINKFLAGS" in result:
+        if "-c" in result["LINKFLAGS"]:
+            result["LINKFLAGS"].remove("-c")
         for i, flag in enumerate(result["LINKFLAGS"]):
             if flag.startswith("-u "):
                 result["LINKFLAGS"][i] = result["LINKFLAGS"][i].split(" ")
@@ -206,7 +111,7 @@ def parse_eix_file(filename):
     return result
 
 
-def get_build_flags(data):
+def _get_flags(data):
     flags = {}
     cflags = set(data.get("CFLAGS", []))
     cxxflags = set(data.get("CXXFLAGS", []))
@@ -214,48 +119,91 @@ def get_build_flags(data):
     flags['CCFLAGS'] = list(ccflags)
     flags['CXXFLAGS'] = list(cxxflags - ccflags)
     flags['CFLAGS'] = list(cflags - ccflags)
+    flags['CPPDEFINES'] = data.get("CPPDEFINES", [])
+    flags['LINKFLAGS'] = data.get("LINKFLAGS", [])
+    flags['LIBS'] = data.get("STDLIBS", [])
+
     return flags
 
 
-def _mbed_whole_archive_hook(libs_):
-    if (not isinstance(libs_, list) or
-            env.subst("$PIOPLATFORM") == "nordicnrf51"):
-        return libs_
+def get_mbed_flags(target):
+    variant_dir = join(FRAMEWORK_DIR, "variant")
+    eix_config_file = join(variant_dir, "%s.eix" % target)
+    if not isfile(join(variant_dir, "%s.eix" % target)):
+        sys.stderr.write(
+            "Cannot find configuration file for your board! "
+            "Run script \"generate_configs.py\" in framework package!\n")
+        env.Exit(1)
+    return _get_flags(parse_eix_file(eix_config_file))
 
-    _dynlibs = []
-    _stlibs = []
-    for l_ in libs_:
-        if isinstance(l_, basestring):
-            _stlibs.append(l_)
+
+def get_mbed_dirs_data(src_dir, ignore_dirs=[]):
+
+    def _get_mbed_labels():
+
+        labels = {
+            "TARGET": [],
+            "TOOLCHAIN": []
+        }
+
+        for f in env.get("CPPDEFINES"):
+            if f.startswith("TARGET_"):
+                labels['TARGET'].append(f[7:])
+            elif f.startswith("TOOLCHAIN_"):
+                labels['TOOLCHAIN'].append(f[10:])
+        return labels
+
+    result = {
+        "inc_dirs": list(),
+        "empty_dirs": list(),
+        "src_dirs": list(),
+        "other_dirs": list(),
+        "linker_path": ""
+    }
+
+    mbed_labels = _get_mbed_labels()
+
+    target_dirs = list()
+
+    for root, dirs, files in walk(src_dir):
+        for d in copy(dirs):
+            # print d, ignore_dirs
+            istargetdir = d.startswith(
+                "TARGET_") and d[7:] not in mbed_labels['TARGET']
+            istoolchaindir = d.startswith(
+                "TOOLCHAIN_") and d[10:] not in mbed_labels['TOOLCHAIN']
+            if ((istargetdir or istoolchaindir) or
+                    (d == "TESTS") or (d.startswith(".")) or d in ignore_dirs):
+                dirs.remove(d)
+            else:
+                target_dirs.append(join(root, d))
+
+    for d in target_dirs:
+        files = [f for f in listdir(d) if isfile(join(d, f))]
+        if not files:
+            result['empty_dirs'].append(d)
+            continue
+        if (any(env.IsFileWithExt(f, SRC_BUILD_EXT) for f in files)):
+            result['src_dirs'].append(d)
+        elif (any(env.IsFileWithExt(f, SRC_HEADER_EXT) for f in files)):
+            result['inc_dirs'].append(d)
         else:
-            _dynlibs.append(l_)
+            result['other_dirs'].append(d)
+        if "TOOLCHAIN_GCC_ARM" in d:
+            for f in listdir(d):
+                if f.lower().endswith(".ld"):
+                    result['linker_path'] = join(d, f)
 
-    libs_ = []
-    if _dynlibs:
-        libs_.append("-Wl,-whole-archive")
-        libs_.extend(_dynlibs)
-        libs_.append("-Wl,-no-whole-archive")
-    libs_.extend(_stlibs)
-
-    return libs_
+    return result
 
 
-board_type = env.subst("$BOARD")
-variant = MBED_VARIANTS[
-    board_type] if board_type in MBED_VARIANTS else board_type.upper()
-eixdata = parse_eix_file(
-    join(FRAMEWORK_DIR, "variant", variant, "%s.eix" % variant))
+def _find_soft_device_hex(target_dirs):
 
-build_flags = get_build_flags(eixdata)
-variant_dir = join(FRAMEWORK_DIR, "variant", variant)
+    if not isfile(join(FRAMEWORK_DIR, "hal", "targets.json")):
+        print("Warning! Cannot find \"targets.json\"."
+              "Firmware will be linked without softdevice binary!")
 
-
-def _find_soft_device_hex():
-
-    if not isfile(join(FRAMEWORK_DIR, "targets.json")):
-        return None
-
-    with open(join(FRAMEWORK_DIR, "targets.json")) as fp:
+    with open(join(FRAMEWORK_DIR, "hal", "targets.json")) as fp:
         data = json.load(fp)
 
     def _find_hex(target_name):
@@ -271,31 +219,38 @@ def _find_soft_device_hex():
         else:
             return target['EXPECTED_SOFTDEVICES_WITH_OFFSETS'][0]['name']
 
-    softdevice_name = _find_hex(variant)
-    if softdevice_name:
-        for root, _, files in walk(env.subst(variant_dir)):
-            if softdevice_name in files:
-                return join(root, softdevice_name)
+    softdevice_file = _find_hex(variant)
+    search_paths = target_dirs.get("other_dirs") + target_dirs.get(
+        "inc_dirs") + target_dirs.get("src_dirs")
+    if softdevice_file:
+        for d in search_paths:
+            if softdevice_file in listdir(d):
+                return join(d, softdevice_file)
 
     sys.stderr.write(
         "Error: Cannot find SoftDevice binary file for your board!\n")
     env.Exit(1)
 
+board_type = env.subst("$BOARD")
+variant = MBED_VARIANTS[
+    board_type] if board_type in MBED_VARIANTS else board_type.upper()
+
+mbed_flags = get_mbed_flags(variant)
+
 
 env.Replace(
-    _mbed_whole_archive_hook=_mbed_whole_archive_hook,
-    _LIBFLAGS="${_mbed_whole_archive_hook(%s)}" % env.get("_LIBFLAGS")[2:-1],
-    CCFLAGS=build_flags.get("CCFLAGS", []),
-    CFLAGS=build_flags.get("CFLAGS", []),
-    CXXFLAGS=build_flags.get("CXXFLAGS", []),
-    LINKFLAGS=eixdata.get("LINKFLAGS", []),
-    CPPDEFINES=[define for define in eixdata.get("CPPDEFINES", [])],
-    LDSCRIPT_PATH=normpath(
-        join(variant_dir, eixdata.get("LDSCRIPT_PATH")[0]))
+    AS="$CC", ASCOM="$ASPPCOM",
+    ASFLAGS=mbed_flags.get("CCFLAGS", [])[:],
+    CCFLAGS=mbed_flags.get("CCFLAGS", []),
+    CFLAGS=mbed_flags.get("CFLAGS", []),
+    CXXFLAGS=mbed_flags.get("CXXFLAGS", []),
+    LINKFLAGS=mbed_flags.get("LINKFLAGS", []),
+    LIBS=mbed_flags.get("LIBS", []),
+    CPPDEFINES=[define for define in mbed_flags.get("CPPDEFINES", [])]
 )
 
-if env.get("PIOPLATFORM") == "nordicnrf51":
-    env.Append(SOFTDEVICEHEX=_find_soft_device_hex())
+
+env.Append(LIBS=["c"])  # temporary fix for the linker issue
 
 # restore external build flags
 if "build.extra_flags" in env.BoardConfig():
@@ -305,43 +260,80 @@ env.ProcessUnFlags(env.get("BUILD_UNFLAGS"))
 # apply user flags
 env.ProcessFlags(env.get("BUILD_FLAGS"))
 
-# Hook for K64F and K22F
-if board_type in ("frdm_k22f", "frdm_k64f"):
-    env.Append(
-        LINKFLAGS=["-Wl,--start-group"]
-    )
-
-for lib_path in eixdata.get("CPPPATH"):
-    _vdir = join("$BUILD_DIR", "FrameworkMbedInc%d" % crc32(lib_path))
-    env.VariantDirWrap(_vdir, join(variant_dir, lib_path))
-    env.Append(CPPPATH=[_vdir])
 
 env.Append(
-    LIBPATH=[join(variant_dir, lib_path)
-             for lib_path in eixdata.get("LIBPATH", [])
-             if lib_path.startswith("mbed")]
+    CPPPATH=[
+        join(FRAMEWORK_DIR, "hal", "api"),
+        join(FRAMEWORK_DIR, "hal", "hal"),
+        join(FRAMEWORK_DIR, "hal", "hal", "storage_abstraction"),
+        join("$BUILD_DIR", "FrameworkMbedHalCommon")
+    ]
 )
 
-#
-# Target: Build mbed Library
-#
+if board_type == "nrf51_dk":
+    target_dirs = get_mbed_dirs_data(
+        join(FRAMEWORK_DIR, "hal", "targets"), ["TARGET_MCU_NRF51822"])
+else:
+    target_dirs = get_mbed_dirs_data(join(FRAMEWORK_DIR, "hal", "targets"))
 
-libs = [l for l in eixdata.get("STDLIBS", []) if l not in env.get("LIBS", [])]
-libs.extend(["mbed", "c", "gcc"])
+for inc_dir in target_dirs.get("inc_dirs", []):
+    env.Append(CPPPATH=[inc_dir])
 
-libs.append(env.Library(
-    join("$BUILD_DIR", "FrameworkMbed"),
-    [join(variant_dir, f)
-     for f in eixdata.get("OBJFILES", [])]
-))
+src_filter = ["+<*.[sS]>", "+<*.c*>"]
+for src_dir in target_dirs.get("src_dirs", []):
+    var_dir = join("$BUILD_DIR", "FrameworkMbed%d" % crc32(src_dir))
+    env.BuildSources(var_dir, src_dir, src_filter=src_filter)
+    env.Append(CPPPATH=[var_dir])
 
-env.Prepend(LIBS=libs)
+env.Replace(LDSCRIPT_PATH=target_dirs.get("linker_path", ""))
 
-for _libname, _libdata in get_used_mbedlibs().iteritems():
-    for _libar in _libdata['ar']:
-        add_mbedlib(_libname, _libar)
-    if "deps" not in _libdata:
-        continue
-    for libdep in _libdata['deps']:
-        for _libar in MBED_LIBS_MAP[libdep]['ar']:
-            add_mbedlib(libdep, _libar)
+if not env.get("LDSCRIPT_PATH"):
+    sys.stderr.write("Cannot find linker script for your board!\n")
+    env.Exit(1)
+
+if env.get("PIOPLATFORM") == "nordicnrf51":
+    env.Append(SOFTDEVICEHEX=_find_soft_device_hex(target_dirs))
+
+env.BuildSources(
+    join("$BUILD_DIR", "FrameworkMbedHalCommon"),
+    join(FRAMEWORK_DIR, "hal", "common")
+)
+
+mbed_libs = [
+    join(FRAMEWORK_DIR, "rtos"),
+    join(FRAMEWORK_DIR, "libraries", "fs"),
+    join(FRAMEWORK_DIR, "libraries", "net"),
+    join(FRAMEWORK_DIR, "libraries", "rpc"),
+    join(FRAMEWORK_DIR, "libraries", "dsp"),
+    join(FRAMEWORK_DIR, "libraries", "USBHost"),
+    join(FRAMEWORK_DIR, "libraries", "USBDevice")
+]
+
+# Library processing
+
+for lib_path in mbed_libs:
+
+    lib_manifest = {
+        "name": "mbed-" + basename(lib_path),
+        "build": {
+            "flags": [],
+            "srcFilter": []
+        }
+    }
+
+    target_dirs = get_mbed_dirs_data(lib_path)
+    lib_dirs = target_dirs.get("empty_dirs") + target_dirs.get(
+        "inc_dirs") + target_dirs.get("src_dirs")
+
+    for d in lib_dirs:
+        if basename(lib_path) == "net" and "cellular" in d:
+            continue
+        rel_path = relpath(d, lib_path).replace("\\", "/")
+        lib_manifest['build']['flags'].append("-I %s" % rel_path)
+        lib_manifest['build']['srcFilter'].extend([
+            "+<%s/*.c*>" % rel_path,
+            "+<%s/*.[sS]>" % rel_path
+        ])
+
+    env.Append(
+        EXTRA_LIB_BUILDERS=[PlatformIOLibBuilder(env, lib_path, lib_manifest)])
