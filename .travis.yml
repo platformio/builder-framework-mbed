@@ -47,13 +47,14 @@ install:
     # Don't forget to switch to stable PlatformIO 3.0 (line below) when it will be released
     # - pip install -U platformio
     - pip install -U https://github.com/platformio/platformio/archive/develop.zip
-    - pio platform install https://github.com/platformio/platform-ststm32/archive/develop.zip --with-package framework-mbed
-    - pio platform install https://github.com/platformio/platform-atmelsam/archive/develop.zip
-    - pio platform install https://github.com/platformio/platform-freescalekinetis/archive/develop.zip
-    - pio platform install https://github.com/platformio/platform-nordicnrf51/archive/develop.zip
-    - pio platform install https://github.com/platformio/platform-nxplpc/archive/develop.zip
-    - pio platform install https://github.com/platformio/platform-siliconlabsefm32/archive/develop.zip
-    - pio platform install https://github.com/platformio/platform-teensy/archive/develop.zip
+    - pio platform install https://github.com/platformio/platform-ststm32.git#develop --with-package framework-mbed
+    - pio platform install https://github.com/platformio/platform-atmelsam.git#develop
+    - pio platform install https://github.com/platformio/platform-freescalekinetis.git#develop
+    - pio platform install https://github.com/platformio/platform-nordicnrf51.git#develop
+    - pio platform install https://github.com/platformio/platform-nxplpc.git#develop
+    - pio platform install https://github.com/platformio/platform-siliconlabsefm32.git#develop
+    - pio platform install https://github.com/platformio/platform-teensy.git#develop
+
 
 script:
     - if [[ $PLATFORMIO_CI_BOARDS_ARGS ]]; then bash -c 'platformio ci $PLATFORMIO_CI_BOARDS_ARGS'; else platformio ci --board bbcmicrobit --board efm32pg_stk3401 --board nucleo_l152re --board frdm_kl46z --board samd21_xpro --board lpc11u35; fi
