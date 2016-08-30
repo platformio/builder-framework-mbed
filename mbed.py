@@ -29,7 +29,7 @@ http://mbed.org/
 import sys
 from copy import copy
 import xml.etree.ElementTree as ElementTree
-from binascii import crc32
+from hashlib import md5
 import json
 from os import walk, listdir
 from os.path import basename, isdir, isfile, join, relpath
@@ -266,7 +266,7 @@ env.Append(
         join(FRAMEWORK_DIR, "hal", "api"),
         join(FRAMEWORK_DIR, "hal", "hal"),
         join(FRAMEWORK_DIR, "hal", "hal", "storage_abstraction"),
-        join("$BUILD_DIR", "FrameworkMbedHalCommon")
+        join(FRAMEWORK_DIR, "hal", "common")
     ]
 )
 
@@ -281,9 +281,10 @@ for inc_dir in target_dirs.get("inc_dirs", []):
 
 src_filter = ["+<*.[sS]>", "+<*.c*>"]
 for src_dir in target_dirs.get("src_dirs", []):
-    var_dir = join("$BUILD_DIR", "FrameworkMbed%d" % crc32(src_dir))
+    var_dir = join("$BUILD_DIR", "FrameworkMbed-{0}-{1}".format(
+        basename(src_dir), md5(src_dir).hexdigest()[:5]))
     env.BuildSources(var_dir, src_dir, src_filter=src_filter)
-    env.Append(CPPPATH=[var_dir])
+    env.Append(CPPPATH=[src_dir])
 
 env.Replace(LDSCRIPT_PATH=target_dirs.get("linker_path", ""))
 
