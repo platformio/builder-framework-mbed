@@ -127,12 +127,13 @@ def _get_flags(data):
 
 
 def get_mbed_flags(target):
-    variant_dir = join(FRAMEWORK_DIR, "variant")
+    variant_dir = join(FRAMEWORK_DIR, "platformio", "variants")
     eix_config_file = join(variant_dir, "%s.eix" % target)
     if not isfile(join(variant_dir, "%s.eix" % target)):
         sys.stderr.write(
             "Cannot find configuration file for your board! "
-            "Run script \"generate_configs.py\" in framework package!\n")
+            "Please read instructions here %s\n" % join(
+                FRAMEWORK_DIR, "platformio", "README.txt"))
         env.Exit(1)
     return _get_flags(parse_eix_file(eix_config_file))
 
