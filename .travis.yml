@@ -3,9 +3,9 @@ python:
     - "2.7"
 
 env:
-    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/benchmarks/all PLATFORMIO_CI_BOARDS_ARGS="-b nrf51_dk -b seeeduinoArchPro"
+    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/benchmarks/all PLATFORMIO_CI_BOARDS_ARGS="-b nrf51_dk -b seeedArchPro"
     - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/benchmarks/cenv
-    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/benchmarks/float_math 
+    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/benchmarks/float_math
     - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/benchmarks/mbed PLATFORMIO_CI_BOARDS_ARGS="-b mbuino -b dfcm_nnn40"
     - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/benchmarks/printf
     - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/dsp/cmsis/fir_f32
