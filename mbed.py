@@ -102,6 +102,8 @@ def parse_eix_file(filename):
 
         for node in tree.findall(path):
             _nkeys = node.keys()
+            if node.get("name") in ("-include", "mbed_config.h"):
+                continue
             result[key].append(
                 node.get(_nkeys[0]) if len(_nkeys) == 1 else node.attrib)
 
