@@ -60,6 +60,8 @@ if isfile(join(FRAMEWORK_DIR, 'mbed.h')):
         join(FRAMEWORK_DIR, "hal"),
         join(FRAMEWORK_DIR, "hal", "storage_abstraction"),
         join(FRAMEWORK_DIR, "platform"),
+        join(FRAMEWORK_DIR, "features"),
+        join(FRAMEWORK_DIR),
     ]
     LIBS_DIRS = [
         join(FRAMEWORK_DIR, "rtos"),
@@ -70,15 +72,10 @@ if isfile(join(FRAMEWORK_DIR, 'mbed.h')):
                   join(FRAMEWORK_DIR, "drivers"))
     CXXFLAGS = [
         '-DMBED_CONF_PLATFORM_DEFAULT_SERIAL_BAUD_RATE=115200',
-        '-I%s' % FRAMEWORK_DIR,
-        '-I%s' % join(FRAMEWORK_DIR, 'features'),
     ]
     CFLAGS = [
         '-DMBED_CONF_PLATFORM_DEFAULT_SERIAL_BAUD_RATE=115200',
-        '-I%s' % FRAMEWORK_DIR,
-        '-I%s' % join(FRAMEWORK_DIR, 'features'),
     ]
-    IGNORE = []
 else:
     # mbed <5.2 (mbed lib 3.127)
     TARGETS_DIRS = [
@@ -107,7 +104,6 @@ else:
     ]
     CFLAGS = [
     ]
-    IGNORE = []
 
 
 MBED_VARIANTS = {
@@ -243,8 +239,9 @@ def get_mbed_dirs_data(src_dirs, ignore_dirs=[]):
                     "TARGET_") and d[7:] not in mbed_labels['TARGET']
                 istoolchaindir = d.startswith(
                     "TOOLCHAIN_") and d[10:] not in mbed_labels['TOOLCHAIN']
-                if ((istargetdir or istoolchaindir) or
-                        (d == "TESTS") or (d.startswith(".")) or d in ignore_dirs):
+                if (istargetdir or istoolchaindir or
+                        d == "TESTS" or d.startswith(".") or
+                        d in ignore_dirs):
                     dirs.remove(d)
                 else:
                     target_dirs.append(join(root, d))
@@ -336,9 +333,9 @@ env.ProcessFlags(env.get("BUILD_FLAGS"))
 env.Append(CPPPATH=CPPPATH)
 
 if board_type == "nrf51_dk":
-    target_dirs = get_mbed_dirs_data(TARGETS_DIRS, IGNORE + ["TARGET_MCU_NRF51822"])
+    target_dirs = get_mbed_dirs_data(TARGETS_DIRS, ["TARGET_MCU_NRF51822"])
 else:
-    target_dirs = get_mbed_dirs_data(TARGETS_DIRS, IGNORE)
+    target_dirs = get_mbed_dirs_data(TARGETS_DIRS)
 
 for inc_dir in target_dirs.get("inc_dirs", []):
     env.Append(CPPPATH=[inc_dir])
