@@ -45,6 +45,71 @@ env = DefaultEnvironment()
 FRAMEWORK_DIR = env.PioPlatform().get_package_dir("framework-mbed")
 assert isdir(FRAMEWORK_DIR)
 
+if isfile(join(FRAMEWORK_DIR, 'mbed.h')):
+    # mbed >= 5.2
+    TARGETS_DIRS = [
+        join(FRAMEWORK_DIR, 'cmsis'),
+        join(FRAMEWORK_DIR, 'hal'),
+        join(FRAMEWORK_DIR, 'targets'),
+        join(FRAMEWORK_DIR, 'platform'),
+    ]
+    TARGETS_FILE = join(FRAMEWORK_DIR, 'targets', 'targets.json')
+    CPPPATH = [
+        join(FRAMEWORK_DIR, "cmsis"),
+        join(FRAMEWORK_DIR, "drivers"),
+        join(FRAMEWORK_DIR, "hal"),
+        join(FRAMEWORK_DIR, "hal", "storage_abstraction"),
+        join(FRAMEWORK_DIR, "platform"),
+    ]
+    LIBS_DIRS = [
+        join(FRAMEWORK_DIR, "rtos"),
+        join(FRAMEWORK_DIR, "events"),
+        join(FRAMEWORK_DIR, "features"),
+    ]
+    HAL_COMMON = (join("$BUILD_DIR", "FrameworkMbedDrivers"),
+                  join(FRAMEWORK_DIR, "drivers"))
+    CXXFLAGS = [
+        '-DMBED_CONF_PLATFORM_DEFAULT_SERIAL_BAUD_RATE=115200',
+        '-I%s' % FRAMEWORK_DIR,
+        '-I%s' % join(FRAMEWORK_DIR, 'features'),
+    ]
+    CFLAGS = [
+        '-DMBED_CONF_PLATFORM_DEFAULT_SERIAL_BAUD_RATE=115200',
+        '-I%s' % FRAMEWORK_DIR,
+        '-I%s' % join(FRAMEWORK_DIR, 'features'),
+    ]
+    IGNORE = []
+else:
+    # mbed <5.2 (mbed lib 3.127)
+    TARGETS_DIRS = [
+        join(FRAMEWORK_DIR, 'hal', 'targets', 'cmsis'),
+        join(FRAMEWORK_DIR, 'hal', 'targets', 'hal'),
+    ]
+    TARGETS_FILE = join(FRAMEWORK_DIR, 'hal', 'targets.json')
+    CPPPATH = [
+        join(FRAMEWORK_DIR, "hal", "api"),
+        join(FRAMEWORK_DIR, "hal", "hal"),
+        join(FRAMEWORK_DIR, "hal", "hal", "storage_abstraction"),
+        join(FRAMEWORK_DIR, "hal", "common")
+    ]
+    LIBS_DIRS = [
+        join(FRAMEWORK_DIR, "rtos"),
+        join(FRAMEWORK_DIR, "libraries"),
+        join(FRAMEWORK_DIR, "libraries", "net"),
+        join(FRAMEWORK_DIR, "libraries", "rpc"),
+        join(FRAMEWORK_DIR, "libraries", "dsp"),
+        join(FRAMEWORK_DIR, "libraries", "USBHost"),
+        join(FRAMEWORK_DIR, "libraries", "USBDevice"),
+    ]
+    HAL_COMMON = (join("$BUILD_DIR", "FrameworkMbedHalCommon"),
+                  join(FRAMEWORK_DIR, "hal", "common"))
+    CXXFLAGS = [
+    ]
+    CFLAGS = [
+    ]
+    IGNORE = []
+
+
 MBED_VARIANTS = {
     "blueboard_lpc11u24": "LPC11U24",
     "dipcortexm0": "LPC11U24",
@@ -113,7 +178,6 @@ def parse_eix_file(filename):
         for i, flag in enumerate(result["LINKFLAGS"]):
             if flag.startswith("-u "):
                 result["LINKFLAGS"][i] = result["LINKFLAGS"][i].split(" ")
-
     return result
 
 
@@ -144,8 +208,7 @@ def get_mbed_flags(target):
     return _get_flags(parse_eix_file(eix_config_file))
 
 
-def get_mbed_dirs_data(src_dir, ignore_dirs=[]):
-
+def get_mbed_dirs_data(src_dirs, ignore_dirs=[]):
     def _get_mbed_labels():
 
         labels = {
@@ -171,19 +234,20 @@ def get_mbed_dirs_data(src_dir, ignore_dirs=[]):
     mbed_labels = _get_mbed_labels()
 
     target_dirs = list()
-
-    for root, dirs, files in walk(src_dir):
-        for d in copy(dirs):
-            # print d, ignore_dirs
-            istargetdir = d.startswith(
-                "TARGET_") and d[7:] not in mbed_labels['TARGET']
-            istoolchaindir = d.startswith(
-                "TOOLCHAIN_") and d[10:] not in mbed_labels['TOOLCHAIN']
-            if ((istargetdir or istoolchaindir) or
-                    (d == "TESTS") or (d.startswith(".")) or d in ignore_dirs):
-                dirs.remove(d)
-            else:
-                target_dirs.append(join(root, d))
+    for src_dir in src_dirs:
+        target_dirs.append(join(src_dir))
+        for root, dirs, files in walk(src_dir):
+            for d in copy(dirs):
+                # print "Looking in", d, ignore_dirs
+                istargetdir = d.startswith(
+                    "TARGET_") and d[7:] not in mbed_labels['TARGET']
+                istoolchaindir = d.startswith(
+                    "TOOLCHAIN_") and d[10:] not in mbed_labels['TOOLCHAIN']
+                if ((istargetdir or istoolchaindir) or
+                        (d == "TESTS") or (d.startswith(".")) or d in ignore_dirs):
+                    dirs.remove(d)
+                else:
+                    target_dirs.append(join(root, d))
 
     for d in target_dirs:
         files = [f for f in listdir(d) if isfile(join(d, f))]
@@ -200,17 +264,16 @@ def get_mbed_dirs_data(src_dir, ignore_dirs=[]):
             for f in listdir(d):
                 if f.lower().endswith(".ld"):
                     result['linker_path'] = join(d, f)
-
     return result
 
 
 def _find_soft_device_hex(target_dirs):
 
-    if not isfile(join(FRAMEWORK_DIR, "hal", "targets.json")):
+    if not isfile(TARGETS_FILE):
         print("Warning! Cannot find \"targets.json\"."
               "Firmware will be linked without softdevice binary!")
 
-    with open(join(FRAMEWORK_DIR, "hal", "targets.json")) as fp:
+    with open(TARGETS_FILE) as fp:
         data = json.load(fp)
 
     def _find_hex(target_name):
@@ -256,6 +319,8 @@ env.Replace(
     CPPDEFINES=[define for define in mbed_flags.get("CPPDEFINES", [])]
 )
 
+env.Append(CFLAGS=CFLAGS)
+env.Append(CXXFLAGS=CXXFLAGS)
 
 env.Append(LIBS=["c"])  # temporary fix for the linker issue
 
@@ -268,20 +333,12 @@ env.ProcessUnFlags(env.get("BUILD_UNFLAGS"))
 env.ProcessFlags(env.get("BUILD_FLAGS"))
 
 
-env.Append(
-    CPPPATH=[
-        join(FRAMEWORK_DIR, "hal", "api"),
-        join(FRAMEWORK_DIR, "hal", "hal"),
-        join(FRAMEWORK_DIR, "hal", "hal", "storage_abstraction"),
-        join(FRAMEWORK_DIR, "hal", "common")
-    ]
-)
+env.Append(CPPPATH=CPPPATH)
 
 if board_type == "nrf51_dk":
-    target_dirs = get_mbed_dirs_data(
-        join(FRAMEWORK_DIR, "hal", "targets"), ["TARGET_MCU_NRF51822"])
+    target_dirs = get_mbed_dirs_data(TARGETS_DIRS, IGNORE + ["TARGET_MCU_NRF51822"])
 else:
-    target_dirs = get_mbed_dirs_data(join(FRAMEWORK_DIR, "hal", "targets"))
+    target_dirs = get_mbed_dirs_data(TARGETS_DIRS, IGNORE)
 
 for inc_dir in target_dirs.get("inc_dirs", []):
     env.Append(CPPPATH=[inc_dir])
@@ -302,24 +359,11 @@ if not env.get("LDSCRIPT_PATH"):
 if env.get("PIOPLATFORM") == "nordicnrf51":
     env.Append(SOFTDEVICEHEX=_find_soft_device_hex(target_dirs))
 
-env.BuildSources(
-    join("$BUILD_DIR", "FrameworkMbedHalCommon"),
-    join(FRAMEWORK_DIR, "hal", "common")
-)
+env.BuildSources(*HAL_COMMON)
 
-mbed_libs = [
-    join(FRAMEWORK_DIR, "rtos"),
-    join(FRAMEWORK_DIR, "libraries", "fs"),
-    join(FRAMEWORK_DIR, "libraries", "net"),
-    join(FRAMEWORK_DIR, "libraries", "rpc"),
-    join(FRAMEWORK_DIR, "libraries", "dsp"),
-    join(FRAMEWORK_DIR, "libraries", "USBHost"),
-    join(FRAMEWORK_DIR, "libraries", "USBDevice")
-]
 
 # Library processing
-
-for lib_path in mbed_libs:
+for lib_path in LIBS_DIRS:
 
     lib_manifest = {
         "name": "mbed-" + basename(lib_path),
@@ -329,7 +373,7 @@ for lib_path in mbed_libs:
         }
     }
 
-    target_dirs = get_mbed_dirs_data(lib_path)
+    target_dirs = get_mbed_dirs_data([lib_path])
     lib_dirs = target_dirs.get("empty_dirs") + target_dirs.get(
         "inc_dirs") + target_dirs.get("src_dirs")
 
