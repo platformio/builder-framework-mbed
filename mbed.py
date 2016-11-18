@@ -75,7 +75,8 @@ MBED_VARIANTS = {
     "samr21_xpro": "SAMR21G18A",
     "saml21_xpro_b": "SAML21J18A",
     "samd21_xpro": "SAMD21J18A",
-    "bbcmicrobit": "NRF51_MICROBIT"
+    "bbcmicrobit": "NRF51_MICROBIT",
+    "bbcmicrobit_b": "NRF51_MICROBIT_B"
 }
 
 
