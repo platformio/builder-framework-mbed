@@ -124,12 +124,12 @@ def _get_flags(data):
     for element in cflags:
         if element in cxxflags:
             ccflags.append(element)
-    flags['CCFLAGS'] = ccflags
     flags['CXXFLAGS'] = list(set(cxxflags) - set(ccflags))
     flags['CFLAGS'] = list(set(cflags) - set(ccflags))
     flags['CPPDEFINES'] = data.get("CPPDEFINES", [])
     flags['LINKFLAGS'] = data.get("LINKFLAGS", [])
     flags['LIBS'] = data.get("STDLIBS", [])
+    flags['CCFLAGS'] = [f for f in ccflags if "-D" not in f]
     return flags
 
 
