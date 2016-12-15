@@ -28,7 +28,7 @@ env:
     - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/mbed/serial_interrupt_2 PLATFORMIO_CI_BOARDS_ARGS="-b lpc4088 -b samd21_xpro"
     - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/mbed/sleep_timeout
     - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/mbed/spi PLATFORMIO_CI_BOARDS_ARGS="-b lpc1768 -b samd21_xpro"
-    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/mbed/spi_slave PLATFORMIO_CI_BOARDS_ARGS="-b lpc1549 -b bbcmicrobit -b samr21_xpro"
+    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/mbed/spi_slave PLATFORMIO_CI_BOARDS_ARGS="-b lpc1549 -b samr21_xpro"
     - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/mbed/stdio_benchmark PLATFORMIO_CI_BOARDS_ARGS="-b lpc1768"
     - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/net/echo/udp_link_layer PLATFORMIO_CI_BOARDS_ARGS="-b lpc1768"
     - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/net/helloworld/broadcast_receive PLATFORMIO_CI_BOARDS_ARGS="-b lpc1768"
@@ -37,7 +37,7 @@ env:
     - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/net/helloworld/multicast_send PLATFORMIO_CI_BOARDS_ARGS="-b ubloxc027"
     - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/usb/device/audio PLATFORMIO_CI_BOARDS_ARGS="-b nucleo_f401re -b frdm_kl25z -b efm32hg_stk3400 -b lpc4088"
     - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/usb/device/basic PLATFORMIO_CI_BOARDS_ARGS="-b frdm_kl25z -b efm32lg_stk3600 -b lpc11u35"
-    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/usb/device/keyboard PLATFORMIO_CI_BOARDS_ARGS="-b disco_f407vg -b frdm_kl25z -b efm32gg_stk3700 -b lpc1768"
+    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/usb/device/keyboard PLATFORMIO_CI_BOARDS_ARGS="-b disco_f407vg -b frdm_kl25z -b lpc1768"
     - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/usb/device/midi PLATFORMIO_CI_BOARDS_ARGS="-b nucleo_f401re -b frdm_kl25z -b efm32lg_stk3600 -b lpc4088"
     - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/usb/device/mouse_keyboard PLATFORMIO_CI_BOARDS_ARGS="-b nucleo_f411re -b frdm_kl25z -b efm32lg_stk3600 -b lpc11u35"
     - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/usb/device/raw_hid PLATFORMIO_CI_BOARDS_ARGS="-b frdm_kl25z -b efm32wg_stk3800 -b lpc1768"
