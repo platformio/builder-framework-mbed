@@ -3,57 +3,57 @@ python:
     - "2.7"
 
 env:
-    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/benchmarks/all PLATFORMIO_CI_BOARDS_ARGS="-b nrf51_dk -b seeedArchPro"
-    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/benchmarks/cenv
-    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/benchmarks/float_math
-    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/benchmarks/mbed PLATFORMIO_CI_BOARDS_ARGS="-b mbuino -b dfcm_nnn40"
-    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/benchmarks/printf
-    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/dsp/cmsis/fir_f32
-    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/dsp/mbed/fir_f32
-    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/KL25Z/lptmr PLATFORMIO_CI_BOARDS_ARGS="-b frdm_kl25z"
-    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/KL25Z/pit PLATFORMIO_CI_BOARDS_ARGS="-b frdm_kl25z"
-    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/KL25Z/rtc PLATFORMIO_CI_BOARDS_ARGS="-b frdm_kl25z"
-    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/mbed/blinky
-    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/mbed/can PLATFORMIO_CI_BOARDS_ARGS="-b b96b_f446ve -b lpc1549"
-    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/mbed/can_interrupt PLATFORMIO_CI_BOARDS_ARGS="-b nucleo_f042k6 -b lpc4088"
-    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/mbed/dir PLATFORMIO_CI_BOARDS_ARGS="-b lpc1768"
-    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/mbed/dir_sd PLATFORMIO_CI_BOARDS_ARGS="-b nucleo_f103rb -b frdm_kl25z"
-    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/mbed/echo_flow_control PLATFORMIO_CI_BOARDS_ARGS="-b lpc1768 -b samd21_xpro"
-    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/mbed/freopen PLATFORMIO_CI_BOARDS_ARGS="-b lpc1768"
-    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/mbed/fs PLATFORMIO_CI_BOARDS_ARGS="-b lpc1768"
-    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/mbed/interruptin_2 PLATFORMIO_CI_BOARDS_ARGS="-b lpc1114fn28 -b samr21_xpro"
-    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/mbed/portout PLATFORMIO_CI_BOARDS_ARGS="-b lpc1768 -b saml21_xpro_b"
-    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/mbed/reset PLATFORMIO_CI_BOARDS_ARGS="-b lpc11u24 -b frdm_kl05z"
-    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/mbed/serial_interrupt
-    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/mbed/serial_interrupt_2 PLATFORMIO_CI_BOARDS_ARGS="-b lpc4088 -b samd21_xpro"
-    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/mbed/sleep_timeout
-    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/mbed/spi PLATFORMIO_CI_BOARDS_ARGS="-b lpc1768 -b samd21_xpro"
-    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/mbed/spi_slave PLATFORMIO_CI_BOARDS_ARGS="-b lpc1549 -b bbcmicrobit -b samr21_xpro"
-    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/mbed/stdio_benchmark PLATFORMIO_CI_BOARDS_ARGS="-b lpc1768"
-    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/net/echo/udp_link_layer PLATFORMIO_CI_BOARDS_ARGS="-b lpc1768"
-    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/net/helloworld/broadcast_receive PLATFORMIO_CI_BOARDS_ARGS="-b lpc1768"
-    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/net/helloworld/broadcast_send PLATFORMIO_CI_BOARDS_ARGS="-b ubloxc027"
-    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/net/helloworld/multicast_receive PLATFORMIO_CI_BOARDS_ARGS="-b lpc1768"
-    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/net/helloworld/multicast_send PLATFORMIO_CI_BOARDS_ARGS="-b ubloxc027"
-    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/usb/device/audio PLATFORMIO_CI_BOARDS_ARGS="-b nucleo_f401re -b frdm_kl25z -b efm32hg_stk3400 -b lpc4088"
-    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/usb/device/basic PLATFORMIO_CI_BOARDS_ARGS="-b frdm_kl25z -b efm32lg_stk3600 -b lpc11u35"
-    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/usb/device/keyboard PLATFORMIO_CI_BOARDS_ARGS="-b disco_f407vg -b frdm_kl25z -b efm32gg_stk3700 -b lpc1768"
-    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/usb/device/midi PLATFORMIO_CI_BOARDS_ARGS="-b nucleo_f401re -b frdm_kl25z -b efm32lg_stk3600 -b lpc4088"
-    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/usb/device/mouse_keyboard PLATFORMIO_CI_BOARDS_ARGS="-b nucleo_f411re -b frdm_kl25z -b efm32lg_stk3600 -b lpc11u35"
-    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/usb/device/raw_hid PLATFORMIO_CI_BOARDS_ARGS="-b frdm_kl25z -b efm32wg_stk3800 -b lpc1768"
-    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/libraries/tests/usb/device/serial PLATFORMIO_CI_BOARDS_ARGS="-b nucleo_f401re -b frdm_kl25z -b efm32lg_stk3600 -b lpc11u35"
+    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/benchmarks/all PLATFORMIO_CI_BOARDS_ARGS="-b nrf51_dk -b seeedArchPro"
+    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/benchmarks/cenv
+    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/benchmarks/float_math
+    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/benchmarks/mbed PLATFORMIO_CI_BOARDS_ARGS="-b mbuino -b dfcm_nnn40"
+    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/benchmarks/printf
+    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/dsp/cmsis/fir_f32
+    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/dsp/mbed/fir_f32
+    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/KL25Z/lptmr PLATFORMIO_CI_BOARDS_ARGS="-b frdm_kl25z"
+    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/KL25Z/pit PLATFORMIO_CI_BOARDS_ARGS="-b frdm_kl25z"
+    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/KL25Z/rtc PLATFORMIO_CI_BOARDS_ARGS="-b frdm_kl25z"
+    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/mbed/blinky
+    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/mbed/can PLATFORMIO_CI_BOARDS_ARGS="-b b96b_f446ve -b lpc1549"
+    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/mbed/can_interrupt PLATFORMIO_CI_BOARDS_ARGS="-b nucleo_f042k6 -b lpc4088"
+    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/mbed/dir PLATFORMIO_CI_BOARDS_ARGS="-b lpc1768"
+    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/mbed/dir_sd PLATFORMIO_CI_BOARDS_ARGS="-b nucleo_f103rb -b frdm_kl25z"
+    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/mbed/echo_flow_control PLATFORMIO_CI_BOARDS_ARGS="-b lpc1768 -b samd21_xpro"
+    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/mbed/freopen PLATFORMIO_CI_BOARDS_ARGS="-b lpc1768"
+    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/mbed/fs PLATFORMIO_CI_BOARDS_ARGS="-b lpc1768"
+    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/mbed/interruptin_2 PLATFORMIO_CI_BOARDS_ARGS="-b lpc1114fn28 -b samr21_xpro"
+    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/mbed/portout PLATFORMIO_CI_BOARDS_ARGS="-b lpc1768 -b saml21_xpro_b"
+    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/mbed/reset PLATFORMIO_CI_BOARDS_ARGS="-b lpc11u24 -b frdm_kl05z"
+    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/mbed/serial_interrupt
+    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/mbed/serial_interrupt_2 PLATFORMIO_CI_BOARDS_ARGS="-b lpc4088 -b samd21_xpro"
+    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/mbed/sleep_timeout
+    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/mbed/spi PLATFORMIO_CI_BOARDS_ARGS="-b lpc1768 -b samd21_xpro"
+    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/mbed/spi_slave PLATFORMIO_CI_BOARDS_ARGS="-b lpc1549 -b samr21_xpro"
+    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/mbed/stdio_benchmark PLATFORMIO_CI_BOARDS_ARGS="-b lpc1768"
+    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/net/echo/udp_link_layer PLATFORMIO_CI_BOARDS_ARGS="-b lpc1768"
+    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/net/helloworld/broadcast_receive PLATFORMIO_CI_BOARDS_ARGS="-b lpc1768"
+    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/net/helloworld/broadcast_send PLATFORMIO_CI_BOARDS_ARGS="-b ubloxc027"
+    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/net/helloworld/multicast_receive PLATFORMIO_CI_BOARDS_ARGS="-b lpc1768"
+    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/net/helloworld/multicast_send PLATFORMIO_CI_BOARDS_ARGS="-b ubloxc027"
+    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/usb/device/audio PLATFORMIO_CI_BOARDS_ARGS="-b nucleo_f401re -b frdm_kl25z -b efm32hg_stk3400 -b lpc4088"
+    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/usb/device/basic PLATFORMIO_CI_BOARDS_ARGS="-b frdm_kl25z -b efm32lg_stk3600 -b lpc11u35"
+    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/usb/device/keyboard PLATFORMIO_CI_BOARDS_ARGS="-b disco_f407vg -b frdm_kl25z -b lpc1768"
+    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/usb/device/midi PLATFORMIO_CI_BOARDS_ARGS="-b nucleo_f401re -b frdm_kl25z -b efm32lg_stk3600 -b lpc4088"
+    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/usb/device/mouse_keyboard PLATFORMIO_CI_BOARDS_ARGS="-b nucleo_f411re -b frdm_kl25z -b efm32lg_stk3600 -b lpc11u35"
+    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/usb/device/raw_hid PLATFORMIO_CI_BOARDS_ARGS="-b frdm_kl25z -b efm32wg_stk3800 -b lpc1768"
+    - PLATFORMIO_CI_SRC=/home/travis/.platformio/packages/framework-mbed/features/unsupported/tests/usb/device/serial PLATFORMIO_CI_BOARDS_ARGS="-b nucleo_f401re -b frdm_kl25z -b efm32lg_stk3600 -b lpc11u35"
 
 install:
     # Don't forget to switch to stable PlatformIO 3.0 (line below) when it will be released
     # - pip install -U platformio
     - pip install -U https://github.com/platformio/platformio/archive/develop.zip
-    - pio platform install https://github.com/platformio/platform-ststm32.git#develop --with-package framework-mbed
-    - pio platform install https://github.com/platformio/platform-atmelsam.git#develop
-    - pio platform install https://github.com/platformio/platform-freescalekinetis.git#develop
-    - pio platform install https://github.com/platformio/platform-nordicnrf51.git#develop
-    - pio platform install https://github.com/platformio/platform-nxplpc.git#develop
-    - pio platform install https://github.com/platformio/platform-siliconlabsefm32.git#develop
-    - pio platform install https://github.com/platformio/platform-teensy.git#develop
+    - pio platform install https://github.com/platformio/platform-ststm32.git#feature/new-mbed-builder --with-package framework-mbed
+    - pio platform install https://github.com/platformio/platform-atmelsam.git#feature/new-mbed-builder
+    - pio platform install https://github.com/platformio/platform-freescalekinetis.git#feature/new-mbed-builder
+    - pio platform install https://github.com/platformio/platform-nordicnrf51.git#feature/new-mbed-builder
+    - pio platform install https://github.com/platformio/platform-nxplpc.git#feature/new-mbed-builder
+    - pio platform install https://github.com/platformio/platform-siliconlabsefm32.git#feature/new-mbed-builder
+    - pio platform install https://github.com/platformio/platform-teensy.git#feature/new-mbed-builder
 
 
 script:
