@@ -129,7 +129,7 @@ def _get_flags(data):
     flags['CPPDEFINES'] = data.get("CPPDEFINES", [])
     flags['LINKFLAGS'] = data.get("LINKFLAGS", [])
     flags['LIBS'] = data.get("STDLIBS", [])
-    flags['CCFLAGS'] = [f for f in ccflags if "-D" not in f]
+    flags['CCFLAGS'] = [f for f in ccflags if not f.startswith("-D")]
     return flags
 
 
