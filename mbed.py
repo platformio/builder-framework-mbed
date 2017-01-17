@@ -181,7 +181,7 @@ def get_mbed_dirs_data(src_dir, ignore_dirs=[]):
             istoolchaindir = d.startswith(
                 "TOOLCHAIN_") and d[10:] not in mbed_labels['TOOLCHAIN']
             if ((istargetdir or istoolchaindir) or
-                    (d == "TESTS") or (d.startswith(".")) or d in ignore_dirs):
+                    (d.upper() == "TESTS") or (d.startswith(".")) or d in ignore_dirs):
                 dirs.remove(d)
             else:
                 target_dirs.append(join(root, d))
@@ -322,6 +322,7 @@ for d in ("drivers", "hal", "platform"):
 
 mbed_libs = [
     join(FRAMEWORK_DIR, "rtos"),
+    join(FRAMEWORK_DIR, "events"),
     join(FRAMEWORK_DIR, "features", "unsupported", "fs"),
     join(FRAMEWORK_DIR, "features", "unsupported", "net"),
     join(FRAMEWORK_DIR, "features", "unsupported", "rpc"),
