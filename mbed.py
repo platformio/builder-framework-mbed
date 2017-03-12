@@ -288,42 +288,55 @@ env.Append(
     ]
 )
 
+ignore_dirs = []
 if board_type == "nrf51_dk":
-    target_dirs = get_mbed_dirs_data(
-        join(FRAMEWORK_DIR, "targets"), ["TARGET_MCU_NRF51822"])
-else:
-    target_dirs = get_mbed_dirs_data(join(FRAMEWORK_DIR, "targets"))
+    ignore_dirs = ["TARGET_MCU_NRF51822"]
+for d in ("hal", "targets", "drivers", "platform"):
+    target_dirs = get_mbed_dirs_data(join(FRAMEWORK_DIR, d), ignore_dirs)
 
+    for inc_dir in target_dirs.get("inc_dirs", []):
+        env.Append(CPPPATH=[inc_dir])
 
-for inc_dir in target_dirs.get("inc_dirs", []):
-    env.Append(CPPPATH=[inc_dir])
+    src_filter = ["+<*.[sS]>", "+<*.c*>"]
+    for src_dir in target_dirs.get("src_dirs", []):
+        var_dir = join("$BUILD_DIR", "FrameworkMbed-{0}-{1}".format(
+            basename(src_dir), md5(src_dir).hexdigest()[:5]))
+        env.BuildSources(var_dir, src_dir, src_filter=src_filter)
+        env.Append(CPPPATH=[src_dir])
 
-src_filter = ["+<*.[sS]>", "+<*.c*>"]
-for src_dir in target_dirs.get("src_dirs", []):
-    var_dir = join("$BUILD_DIR", "FrameworkMbed-{0}-{1}".format(
-        basename(src_dir), md5(src_dir).hexdigest()[:5]))
-    env.BuildSources(var_dir, src_dir, src_filter=src_filter)
-    env.Append(CPPPATH=[src_dir])
-
-env.Replace(LDSCRIPT_PATH=target_dirs.get("linker_path", ""))
+    if target_dirs.get("linker_path", ""):
+        env.Replace(LDSCRIPT_PATH=target_dirs.get("linker_path"))
 
 if not env.get("LDSCRIPT_PATH"):
     sys.stderr.write("Cannot find linker script for your board!\n")
     env.Exit(1)
 
-if env.get("PIOPLATFORM") == "nordicnrf51":
-    env.Append(SOFTDEVICEHEX=_find_soft_device_hex(target_dirs))
 
-for d in ("drivers", "hal", "platform"):
-    env.BuildSources(
-        join("$BUILD_DIR", "FrameworkMbed-%s" % d),
-        join(FRAMEWORK_DIR, d)
-    )
+#
+# Generate linker script
+#
+
+linker_script = env.Command(
+    join("$BUILD_DIR", "%s.link_script.ld" %
+         basename(env.get("LDSCRIPT_PATH"))),
+    env.get("LDSCRIPT_PATH"),
+    env.VerboseAction(
+        "arm-none-eabi-cpp -E -P %s $SOURCE -o $TARGET" % " ".join(
+            mbed_flags.get("LINKFLAGS", [])),
+        "Generating LD script $TARGET"))
+
+env.Depends("$BUILD_DIR/$PROGNAME$PROGSUFFIX", linker_script)
+env.Replace(LDSCRIPT_PATH=linker_script)
+
+
+if env.get("PIOPLATFORM") == "nordicnrf51":
+    env.Append(SOFTDEVICEHEX=_find_soft_device_hex(
+        get_mbed_dirs_data(join(FRAMEWORK_DIR, "targets"))))
 
 mbed_libs = [
     join(FRAMEWORK_DIR, "rtos"),
     join(FRAMEWORK_DIR, "events"),
-    join(FRAMEWORK_DIR, "features", "unsupported", "fs"),
+    join(FRAMEWORK_DIR, "features", "filesystem"),
     join(FRAMEWORK_DIR, "features", "unsupported", "net"),
     join(FRAMEWORK_DIR, "features", "unsupported", "rpc"),
     join(FRAMEWORK_DIR, "features", "unsupported", "dsp"),
