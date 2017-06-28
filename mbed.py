@@ -77,7 +77,9 @@ MBED_VARIANTS = {
     "samd21_xpro": "SAMD21J18A",
     "bbcmicrobit": "NRF51_MICROBIT",
     "bbcmicrobit_b": "NRF51_MICROBIT_B",
-    "disco_f030r8": "NUCLEO_F030R8"
+    "disco_f030r8": "NUCLEO_F030R8",
+    "cloud_jam": "NUCLEO_F401RE",
+    "cloud_jam_l4": "NUCLEO_L476RG"
 }
 
 
