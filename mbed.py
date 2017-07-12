@@ -27,241 +27,95 @@ http://mbed.org/
 """
 
 import sys
-from copy import copy
-import xml.etree.ElementTree as ElementTree
-from hashlib import md5
-import json
-from os import walk, listdir
-from os.path import basename, isdir, isfile, join, relpath
-
-
-from platformio.builder.tools.platformio import SRC_BUILD_EXT, SRC_HEADER_EXT
-from platformio.builder.tools.piolib import PlatformIOLibBuilder
+from os.path import basename, isdir, isfile, join
 
 from SCons.Script import DefaultEnvironment
+
+from platformio import util
+from platformio.builder.tools.piolib import PlatformIOLibBuilder
 
 env = DefaultEnvironment()
 
 FRAMEWORK_DIR = env.PioPlatform().get_package_dir("framework-mbed")
 assert isdir(FRAMEWORK_DIR)
 
-MBED_VARIANTS = {
-    "blueboard_lpc11u24": "LPC11U24",
-    "dipcortexm0": "LPC11U24",
-    "seeedArchPro": "ARCH_PRO",
-    "seeedArchBLE": "ARCH_BLE",
-    "seeedTinyBLE": "SEEED_TINY_BLE",
-    "seeedArchMax": "ARCH_MAX",
-    "seeedArchGPRS": "ARCH_GPRS",
-    "seeedArchLink": "ARCH_LINK",
-    "ubloxc027": "UBLOX_C027",
-    "lpc1114fn28": "LPC1114",
-    "lpc11u35": "LPC11U35_401",
-    "mbuino": "LPC11U24",
-    "nrf51_mkit": "NRF51822",
-    "redBearLab": "RBLAB_NRF51822",
-    "redBearLabBLENano": "RBLAB_BLENANO",
-    "frdm_kl25z": "KL25Z",
-    "frdm_kl26z": "KL26Z",
-    "frdm_kl27z": "KL27Z",
-    "frdm_kl43z": "KL43Z",
-    "frdm_kl46z": "KL46Z",
-    "frdm_k64f": "K64F",
-    "frdm_kl05z": "KL05Z",
-    "frdm_k20d50m": "K20D50M",
-    "frdm_k22f": "K22F",
-    "teensy31": "TEENSY3_1",
-    "dfcm_nnn40": "DELTA_DFCM_NNN40",
-    "samr21_xpro": "SAMR21G18A",
-    "saml21_xpro_b": "SAML21J18A",
-    "samd21_xpro": "SAMD21J18A",
-    "bbcmicrobit": "NRF51_MICROBIT",
-    "bbcmicrobit_b": "NRF51_MICROBIT_B",
-    "disco_f030r8": "NUCLEO_F030R8",
-    "cloud_jam": "NUCLEO_F401RE",
-    "cloud_jam_l4": "NUCLEO_L476RG"
-}
+
+class MbedLibBuilder(PlatformIOLibBuilder):
+    # For cases when sources located not ony in "src" dir
+
+    @property
+    def src_dir(self):
+        return self.path
 
 
-def parse_eix_file(filename):
-    result = {}
-    paths = (
-        ("CFLAGS", "./Target/Source/CC/Switch"),
-        ("CXXFLAGS", "./Target/Source/CPPC/Switch"),
-        ("CPPDEFINES", "./Target/Source/Symbols/Symbol"),
-        ("FILES", "./Target/Files/File"),
-        ("LINKFLAGS", "./Target/Source/LD/Switch"),
-        ("OBJFILES", "./Target/Source/Addobjects/Addobject"),
-        ("LIBPATH", "./Target/Linker/Librarypaths/Librarypath"),
-        ("STDLIBS", "./Target/Source/Syslibs/Library"),
-        ("LDSCRIPT_PATH", "./Target/Source/Scriptfile"),
-        ("CPPPATH", "./Target/Compiler/Includepaths/Includepath")
-    )
-
-    tree = ElementTree.parse(filename)
-
-    for (key, path) in paths:
-        if key not in result:
-            result[key] = []
-
-        for node in tree.findall(path):
-            _nkeys = node.keys()
-            if len(_nkeys) == 1:
-                result[key].append(node.get(_nkeys[0]))
-
-    if "LINKFLAGS" in result:
-        if "-c" in result["LINKFLAGS"]:
-            result["LINKFLAGS"].remove("-c")
-        for i, flag in enumerate(result["LINKFLAGS"]):
-            if flag.startswith("-u "):
-                result["LINKFLAGS"][i] = result["LINKFLAGS"][i].split(" ")
-
-    return result
-
-
-def _get_flags(data):
-    flags = {}
-    cflags = data.get("CFLAGS", [])
-    cxxflags = data.get("CXXFLAGS", [])
-    ccflags = []
-    for element in cflags:
-        if element in cxxflags:
-            ccflags.append(element)
-    flags['CXXFLAGS'] = list(set(cxxflags) - set(ccflags))
-    flags['CFLAGS'] = list(set(cflags) - set(ccflags))
-    flags['CPPDEFINES'] = data.get("CPPDEFINES", [])
-    flags['LINKFLAGS'] = data.get("LINKFLAGS", [])
-    flags['LIBS'] = data.get("STDLIBS", [])
-    flags['CCFLAGS'] = [f for f in ccflags if not f.startswith("-D")]
-    return flags
-
-
-def get_mbed_flags(target):
-    variant_dir = join(FRAMEWORK_DIR, "platformio", "variants")
-    eix_config_file = join(variant_dir, target, "%s.eix" % target)
-    if not isfile(join(variant_dir, target, "%s.eix" % target)):
-        sys.stderr.write(
-            "Cannot find configuration file for your board! "
-            "Please read instructions here %s\n" % join(
-                FRAMEWORK_DIR, "platformio", "README.txt"))
+def get_mbed_config(target):
+    config_file = join(FRAMEWORK_DIR, "platformio", "variants", target,
+                       target + ".json")
+    if not isfile(config_file):
+        sys.stderr.write("Cannot find the configuration file for your board! "
+                         "Please read instructions here %s\n" % join(
+                             FRAMEWORK_DIR, "platformio", "README.txt"))
         env.Exit(1)
-    return _get_flags(parse_eix_file(eix_config_file))
+
+    return util.load_json(config_file)
 
 
-def get_mbed_dirs_data(src_dir, ignore_dirs=[]):
-
-    def _get_mbed_labels():
-
-        labels = {
-            "TARGET": [],
-            "TOOLCHAIN": []
+def get_dynamic_manifest(name, config, extra_inc_dirs=[]):
+    manifest = {
+        "name": "mbed-" + name,
+        "build": {
+            "flags": ["-I.."],
+            "srcFilter": ["-<*>"],
+            "libArchive": False
         }
-
-        for f in env.subst("$CPPDEFINES").split():
-            if f.startswith("TARGET_"):
-                labels['TARGET'].append(f[7:])
-            elif f.startswith("TOOLCHAIN_"):
-                labels['TOOLCHAIN'].append(f[10:])
-        return labels
-
-    result = {
-        "inc_dirs": list(),
-        "empty_dirs": list(),
-        "src_dirs": list(),
-        "other_dirs": list(),
-        "linker_path": ""
     }
 
-    mbed_labels = _get_mbed_labels()
+    manifest['build']['flags'].extend(
+        ["-I %s" % d for d in config.get("inc_dirs")])
 
-    target_dirs = list()
-    target_dirs.append(src_dir)
+    for d in extra_inc_dirs:
+        manifest['build']['flags'].extend(["-I %s" % d.replace("\\", "/")])
 
-    for root, dirs, files in walk(src_dir):
-        for d in copy(dirs):
-            istargetdir = d.startswith(
-                "TARGET_") and d[7:] not in mbed_labels['TARGET']
-            istoolchaindir = d.startswith(
-                "TOOLCHAIN_") and d[10:] not in mbed_labels['TOOLCHAIN']
-            if ((istargetdir or istoolchaindir) or
-                    (d.upper() == "TESTS") or (d.startswith(".")) or d in ignore_dirs):
-                dirs.remove(d)
-            else:
-                target_dirs.append(join(root, d))
+    src_files = config.get("c_sources") + \
+        config.get("s_sources") + config.get("cpp_sources")
+    for f in src_files:
+        manifest['build']['srcFilter'].extend([" +<%s>" % f])
 
-    for d in target_dirs:
-        files = [f for f in listdir(d) if isfile(join(d, f))]
-        if not files:
-            result['empty_dirs'].append(d)
-            continue
-        if (any(env.IsFileWithExt(f, SRC_BUILD_EXT) for f in files)):
-            result['src_dirs'].append(d)
-        elif (any(env.IsFileWithExt(f, SRC_HEADER_EXT) for f in files)):
-            result['inc_dirs'].append(d)
-        else:
-            result['other_dirs'].append(d)
-        if "TOOLCHAIN_GCC_ARM" in d:
-            for f in listdir(d):
-                if f.lower().endswith(".ld"):
-                    result['linker_path'] = join(d, f)
+    if name == "LWIP":
+        manifest['dependencies'] = {"mbed-events": "*"}
 
-    return result
+    return manifest
 
 
-def _find_soft_device_hex(target_dirs):
-
-    if not isfile(join(FRAMEWORK_DIR, "targets", "targets.json")):
-        print("Warning! Cannot find \"targets.json\"."
-              "Firmware will be linked without softdevice binary!")
-
-    with open(join(FRAMEWORK_DIR, "targets", "targets.json")) as fp:
-        data = json.load(fp)
-
-    def _find_hex(target_name):
-        assert isinstance(data, dict)
-        if target_name not in data:
-            return None
-        target = data[target_name]
-        if "EXPECTED_SOFTDEVICES_WITH_OFFSETS" not in target:
-            try:
-                return _find_hex(target.get("inherits", [])[0])
-            except IndexError:
-                return None
-        else:
-            return target['EXPECTED_SOFTDEVICES_WITH_OFFSETS'][0]['name']
-
-    softdevice_file = _find_hex(variant)
-    search_paths = target_dirs.get("other_dirs") + target_dirs.get(
-        "inc_dirs") + target_dirs.get("src_dirs")
-    if softdevice_file:
-        for d in search_paths:
-            if softdevice_file in listdir(d):
-                return join(d, softdevice_file)
-
-    sys.stderr.write(
-        "Error: Cannot find SoftDevice binary file for your board!\n")
-    env.Exit(1)
-
+variants_remap = util.load_json(
+    join(FRAMEWORK_DIR, "platformio", "variants_remap.json"))
 board_type = env.subst("$BOARD")
-variant = MBED_VARIANTS[
-    board_type] if board_type in MBED_VARIANTS else board_type.upper()
+variant = variants_remap[
+    board_type] if board_type in variants_remap else board_type.upper()
 
-mbed_flags = get_mbed_flags(variant)
-
+mbed_config = get_mbed_config(variant)
 
 env.Replace(
-    AS="$CC", ASCOM="$ASPPCOM",
-    ASFLAGS=mbed_flags.get("CCFLAGS", [])[:],
-    CCFLAGS=mbed_flags.get("CCFLAGS", []),
-    CFLAGS=mbed_flags.get("CFLAGS", []),
-    CXXFLAGS=mbed_flags.get("CXXFLAGS", []),
-    LINKFLAGS=mbed_flags.get("LINKFLAGS", []),
-    LIBS=mbed_flags.get("LIBS", []),
-    CPPDEFINES=[define for define in mbed_flags.get("CPPDEFINES", [])]
-)
+    AS="$CC",
+    ASCOM="$ASPPCOM",
+    ASFLAGS=mbed_config.get("build_flags").get("asm") +
+    mbed_config.get("build_flags").get("common"),
+    CCFLAGS=mbed_config.get("build_flags").get("common"),
+    CFLAGS=mbed_config.get("build_flags").get("c"),
+    CXXFLAGS=mbed_config.get("build_flags").get("cxx"),
+    LINKFLAGS=mbed_config.get("build_flags").get("ld"),
+    LIBS=mbed_config.get("syslibs"))
 
+symbols = []
+for s in mbed_config.get("symbols"):
+    s = s.replace("\"", "\\\"")
+    macro = s.split("=", 1)
+    if len(macro) == 2 and macro[1].isdigit():
+        symbols.append((macro[0], int(macro[1])))
+    else:
+        symbols.append(s)
 
-env.Append(LIBS=["c"])  # temporary fix for the linker issue
+env.Replace(CPPDEFINES=symbols)
 
 # restore external build flags
 if "build.extra_flags" in env.BoardConfig():
@@ -271,107 +125,103 @@ env.ProcessUnFlags(env.get("BUILD_UNFLAGS"))
 # apply user flags
 env.ProcessFlags(env.get("BUILD_FLAGS"))
 
+MBED_RTOS = "PIO_FRAMEWORK_MBED_RTOS_PRESENT" in env.Flatten(
+    env.get("CPPDEFINES", []))
 
-env.Append(
-    CPPPATH=[
-        FRAMEWORK_DIR,
-        join(FRAMEWORK_DIR, "cmsis"),
-        join(FRAMEWORK_DIR, "drivers"),
-        join(FRAMEWORK_DIR, "hal"),
-        join(FRAMEWORK_DIR, "hal", "storage_abstraction"),
-        join(FRAMEWORK_DIR, "platform"),
-        join(FRAMEWORK_DIR, "platformio", "variants", variant)
-    ],
+if MBED_RTOS:
+    env.Append(CPPDEFINES=["MBED_CONF_RTOS_PRESENT"])
 
-    CPPDEFINES=[
-        ("MBED_CONF_PLATFORM_STDIO_BAUD_RATE", "9600"),
-        ("MBED_CONF_PLATFORM_DEFAULT_SERIAL_BAUD_RATE", "9600"),
-        ("MBED_CONF_PLATFORM_STDIO_FLUSH_AT_EXIT", "1"),
-        ("MBED_CONF_PLATFORM_STDIO_CONVERT_NEWLINES", "0")
-    ]
-)
+#
+# Process libraries
+#
 
-ignore_dirs = []
-if board_type == "nrf51_dk":
-    ignore_dirs = ["TARGET_MCU_NRF51822"]
-for d in ("hal", "targets", "drivers", "platform"):
-    target_dirs = get_mbed_dirs_data(join(FRAMEWORK_DIR, d), ignore_dirs)
+# There is no difference in processing between lib and feature
+libs = mbed_config.get("libs").copy()
+libs.update(mbed_config.get("features"))
 
-    for inc_dir in target_dirs.get("inc_dirs", []):
-        env.Append(CPPPATH=[inc_dir])
+if "PIO_FRAMEWORK_MBED_FILESYSTEM_PRESENT" in env.Flatten(
+        env.get("CPPDEFINES", [])):
+    env.Append(CPPDEFINES=["MBED_CONF_FILESYSTEM_PRESENT"])
 
-    src_filter = ["+<*.[sS]>", "+<*.c*>"]
-    for src_dir in target_dirs.get("src_dirs", []):
-        var_dir = join("$BUILD_DIR", "FrameworkMbed-{0}-{1}".format(
-            basename(src_dir), md5(src_dir).hexdigest()[:5]))
-        env.BuildSources(var_dir, src_dir, src_filter=src_filter)
-        env.Append(CPPPATH=[src_dir])
+# Add RTOS library only when a user requested it
+if MBED_RTOS:
+    rtos_config = mbed_config.get("libs").get("rtos")
+    env.Append(EXTRA_LIB_BUILDERS=[
+        MbedLibBuilder(env,
+                       join(FRAMEWORK_DIR, rtos_config.get("dir")),
+                       get_dynamic_manifest("rtos", rtos_config))
+    ])
 
-    if target_dirs.get("linker_path", ""):
-        env.Replace(LDSCRIPT_PATH=target_dirs.get("linker_path"))
+del libs['rtos']
 
-if not env.get("LDSCRIPT_PATH"):
-    sys.stderr.write("Cannot find linker script for your board!\n")
-    env.Exit(1)
+for lib, lib_config in libs.items():
+    extra_includes = []
+    if lib == "events" and not MBED_RTOS:
+        # Manually handle dependency on rtos lib
+        extra_includes = [
+            join(FRAMEWORK_DIR,
+                 mbed_config.get("libs").get("rtos").get("dir"), f)
+            for f in mbed_config.get("libs").get("rtos").get("inc_dirs")
+        ]
 
+    env.Append(EXTRA_LIB_BUILDERS=[
+        MbedLibBuilder(env,
+                       join(FRAMEWORK_DIR, lib_config.get("dir")),
+                       get_dynamic_manifest(lib, lib_config, extra_includes))
+    ])
+
+#
+# Process Core files from framework
+#
+
+env.Append(CPPPATH=[
+    join(FRAMEWORK_DIR, d) for d in mbed_config.get("core").get("inc_dirs")
+])
+
+env.Append(CPPPATH=[
+    FRAMEWORK_DIR,
+    join(FRAMEWORK_DIR, "platformio", "variants", variant)
+])
+
+# If RTOS is enabled then some of the files from Core depdend on it
+if MBED_RTOS:
+    for d in mbed_config.get("libs").get("rtos").get("inc_dirs"):
+        env.Append(CPPPATH=[join(FRAMEWORK_DIR, "rtos", d)])
+
+core_src_files = mbed_config.get("core").get("s_sources") + mbed_config.get(
+    "core").get("c_sources") + mbed_config.get("core").get("cpp_sources")
+
+env.BuildSources(
+    join("$BUILD_DIR", "FrameworkMbedCore"),
+    FRAMEWORK_DIR,
+    src_filter=["-<*>"] + [" +<%s>" % f for f in core_src_files])
+
+
+if "nordicnrf5" in env.get("PIOPLATFORM"):
+    softdevice_hex_path = join(FRAMEWORK_DIR,
+                               mbed_config.get("softdevice_hex", ""))
+    if softdevice_hex_path and isfile(softdevice_hex_path):
+        env.Append(SOFTDEVICEHEX=softdevice_hex_path)
+    else:
+        print("Warning! Cannot find softdevice binary"
+              "Firmware will be linked without it!")
 
 #
 # Generate linker script
 #
 
+env.Replace(LDSCRIPT_PATH=join(FRAMEWORK_DIR, mbed_config.get("ldscript")))
+if not env.get("LDSCRIPT_PATH"):
+    sys.stderr.write("Cannot find linker script for your board!\n")
+    env.Exit(1)
+
 linker_script = env.Command(
-    join("$BUILD_DIR", "%s.link_script.ld" %
-         basename(env.get("LDSCRIPT_PATH"))),
+    join("$BUILD_DIR",
+         "%s.link_script.ld" % basename(env.get("LDSCRIPT_PATH"))),
     env.get("LDSCRIPT_PATH"),
-    env.VerboseAction(
-        "arm-none-eabi-cpp -E -P %s $SOURCE -o $TARGET" % " ".join(
-            mbed_flags.get("LINKFLAGS", [])),
-        "Generating LD script $TARGET"))
+    env.VerboseAction("arm-none-eabi-cpp -E -P %s $SOURCE -o $TARGET" %
+                      " ".join(mbed_config.get("build_flags").get("ld")),
+                      "Generating LD script $TARGET"))
 
 env.Depends("$BUILD_DIR/$PROGNAME$PROGSUFFIX", linker_script)
 env.Replace(LDSCRIPT_PATH=linker_script)
-
-
-if env.get("PIOPLATFORM") == "nordicnrf51":
-    env.Append(SOFTDEVICEHEX=_find_soft_device_hex(
-        get_mbed_dirs_data(join(FRAMEWORK_DIR, "targets"))))
-
-mbed_libs = [
-    join(FRAMEWORK_DIR, "rtos"),
-    join(FRAMEWORK_DIR, "events"),
-    join(FRAMEWORK_DIR, "features", "filesystem"),
-    join(FRAMEWORK_DIR, "features", "unsupported", "net"),
-    join(FRAMEWORK_DIR, "features", "unsupported", "rpc"),
-    join(FRAMEWORK_DIR, "features", "unsupported", "dsp"),
-    join(FRAMEWORK_DIR, "features", "unsupported", "USBHost"),
-    join(FRAMEWORK_DIR, "features", "unsupported", "USBDevice")
-]
-
-# Library processing
-
-for lib_path in mbed_libs:
-
-    lib_manifest = {
-        "name": "mbed-" + basename(lib_path),
-        "build": {
-            "flags": [],
-            "srcFilter": []
-        }
-    }
-
-    target_dirs = get_mbed_dirs_data(lib_path)
-    lib_dirs = target_dirs.get("empty_dirs") + target_dirs.get(
-        "inc_dirs") + target_dirs.get("src_dirs")
-
-    for d in lib_dirs:
-        if basename(lib_path) == "net" and "cellular" in d:
-            continue
-        rel_path = relpath(d, lib_path).replace("\\", "/")
-        lib_manifest['build']['flags'].append("-I %s" % rel_path)
-        lib_manifest['build']['srcFilter'].extend([
-            "+<%s/*.c*>" % rel_path,
-            "+<%s/*.[sS]>" % rel_path
-        ])
-
-    env.Append(
-        EXTRA_LIB_BUILDERS=[PlatformIOLibBuilder(env, lib_path, lib_manifest)])
