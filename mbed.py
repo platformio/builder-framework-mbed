@@ -117,6 +117,8 @@ for s in mbed_config.get("symbols"):
 
 env.Replace(CPPDEFINES=symbols)
 
+env.Append(LIBS=["c", "stdc++"])  # temporary fix for the linker issue
+
 # restore external build flags
 if "build.extra_flags" in env.BoardConfig():
     env.ProcessFlags(env.BoardConfig().get("build.extra_flags"))
