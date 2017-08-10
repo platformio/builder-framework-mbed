@@ -71,10 +71,10 @@ def get_dynamic_manifest(name, config, extra_inc_dirs=[]):
     }
 
     manifest['build']['flags'].extend(
-        ["-I %s" % d for d in config.get("inc_dirs")])
+        ['-I "%s"' % d for d in config.get("inc_dirs")])
 
     for d in extra_inc_dirs:
-        manifest['build']['flags'].extend(["-I %s" % d.replace("\\", "/")])
+        manifest['build']['flags'].extend(['-I "%s"' % d.replace("\\", "/")])
 
     src_files = config.get("c_sources") + \
         config.get("s_sources") + config.get("cpp_sources")
