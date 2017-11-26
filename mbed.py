@@ -41,8 +41,10 @@ assert isdir(FRAMEWORK_DIR)
 
 
 class MbedLibBuilder(PlatformIOLibBuilder):
-    # For cases when sources located not ony in "src" dir
 
+    PARSE_SRC_BY_H_NAME = False
+
+    # For cases when sources located not only in "src" dir
     @property
     def src_dir(self):
         return self.path
