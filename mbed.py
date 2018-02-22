@@ -67,8 +67,7 @@ def get_dynamic_manifest(name, config, extra_inc_dirs=[]):
         "name": "mbed-" + name,
         "build": {
             "flags": ["-I.."],
-            "srcFilter": ["-<*>"],
-            "libArchive": False
+            "srcFilter": ["-<*>"]
         }
     }
 
@@ -85,6 +84,7 @@ def get_dynamic_manifest(name, config, extra_inc_dirs=[]):
 
     if name == "LWIP":
         manifest['dependencies'] = {"mbed-events": "*"}
+        manifest['build']['libLDFMode'] = "chain+"
 
     return manifest
 
@@ -147,33 +147,6 @@ if "PIO_FRAMEWORK_MBED_FILESYSTEM_PRESENT" in env.Flatten(
         env.get("CPPDEFINES", [])):
     env.Append(CPPDEFINES=["MBED_CONF_FILESYSTEM_PRESENT"])
 
-# Add RTOS library only when a user requested it
-if MBED_RTOS:
-    rtos_config = mbed_config.get("libs").get("rtos")
-    env.Append(EXTRA_LIB_BUILDERS=[
-        MbedLibBuilder(env,
-                       join(FRAMEWORK_DIR, rtos_config.get("dir")),
-                       get_dynamic_manifest("rtos", rtos_config))
-    ])
-
-del libs['rtos']
-
-for lib, lib_config in libs.items():
-    extra_includes = []
-    if lib == "events" and not MBED_RTOS:
-        # Manually handle dependency on rtos lib
-        extra_includes = [
-            join(FRAMEWORK_DIR,
-                 mbed_config.get("libs").get("rtos").get("dir"), f)
-            for f in mbed_config.get("libs").get("rtos").get("inc_dirs")
-        ]
-
-    env.Append(EXTRA_LIB_BUILDERS=[
-        MbedLibBuilder(env,
-                       join(FRAMEWORK_DIR, lib_config.get("dir")),
-                       get_dynamic_manifest(lib, lib_config, extra_includes))
-    ])
-
 #
 # Process Core files from framework
 #
@@ -229,3 +202,34 @@ linker_script = env.Command(
 
 env.Depends("$BUILD_DIR/$PROGNAME$PROGSUFFIX", linker_script)
 env.Replace(LDSCRIPT_PATH=linker_script)
+
+#
+# Initialize libraries for LDF
+#
+
+for lib, lib_config in libs.items():
+    extra_includes = []
+    if lib == "events" and not MBED_RTOS:
+        # Manually handle dependency on rtos lib
+        extra_includes = [
+            join(FRAMEWORK_DIR,
+                 mbed_config.get("libs").get("rtos").get("dir"), f)
+            for f in mbed_config.get("libs").get("rtos").get("inc_dirs")
+        ]
+
+    env.Append(EXTRA_LIB_BUILDERS=[
+        MbedLibBuilder(env,
+                       join(FRAMEWORK_DIR, lib_config.get("dir")),
+                       get_dynamic_manifest(lib, lib_config, extra_includes))
+    ])
+
+
+# Add RTOS library only when a user requested it
+if MBED_RTOS:
+    rtos_config = mbed_config.get("libs").get("rtos")
+    env.Append(EXTRA_LIB_BUILDERS=[
+        MbedLibBuilder(env,
+                       join(FRAMEWORK_DIR, rtos_config.get("dir")),
+                       get_dynamic_manifest("rtos", rtos_config))
+    ])
+
