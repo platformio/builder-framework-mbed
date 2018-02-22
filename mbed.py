@@ -67,7 +67,8 @@ def get_dynamic_manifest(name, config, extra_inc_dirs=[]):
         "name": "mbed-" + name,
         "build": {
             "flags": ["-I.."],
-            "srcFilter": ["-<*>"]
+            "srcFilter": ["-<*>"],
+            "libArchive": False
         }
     }
 
