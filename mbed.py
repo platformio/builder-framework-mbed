@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 mbed
 
@@ -40,9 +39,15 @@ FRAMEWORK_DIR = env.PioPlatform().get_package_dir("framework-mbed")
 assert isdir(FRAMEWORK_DIR)
 
 
-class MbedLibBuilder(PlatformIOLibBuilder):
+class CustomLibBuilder(PlatformIOLibBuilder):
 
     PARSE_SRC_BY_H_NAME = False
+
+    # Max depth of nested includes:
+    # -1 = unlimited
+    # 0 - disabled nesting
+    # >0 - number of allowed nested includes
+    CCONDITIONAL_SCANNER_DEPTH = 0
 
     # For cases when sources located not only in "src" dir
     @property
@@ -174,7 +179,6 @@ env.BuildSources(
     FRAMEWORK_DIR,
     src_filter=["-<*>"] + [" +<%s>" % f for f in core_src_files])
 
-
 if "nordicnrf5" in env.get("PIOPLATFORM"):
     softdevice_hex_path = join(FRAMEWORK_DIR,
                                mbed_config.get("softdevice_hex", ""))
@@ -219,18 +223,14 @@ for lib, lib_config in libs.items():
         ]
 
     env.Append(EXTRA_LIB_BUILDERS=[
-        MbedLibBuilder(env,
-                       join(FRAMEWORK_DIR, lib_config.get("dir")),
-                       get_dynamic_manifest(lib, lib_config, extra_includes))
+        CustomLibBuilder(env, join(FRAMEWORK_DIR, lib_config.get("dir")),
+                         get_dynamic_manifest(lib, lib_config, extra_includes))
     ])
-
 
 # Add RTOS library only when a user requested it
 if MBED_RTOS:
     rtos_config = mbed_config.get("libs").get("rtos")
     env.Append(EXTRA_LIB_BUILDERS=[
-        MbedLibBuilder(env,
-                       join(FRAMEWORK_DIR, rtos_config.get("dir")),
-                       get_dynamic_manifest("rtos", rtos_config))
+        CustomLibBuilder(env, join(FRAMEWORK_DIR, rtos_config.get("dir")),
+                         get_dynamic_manifest("rtos", rtos_config))
     ])
-
