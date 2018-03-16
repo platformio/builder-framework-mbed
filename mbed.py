@@ -90,7 +90,8 @@ def get_dynamic_manifest(name, config, extra_inc_dirs=[]):
 
     if name == "LWIP":
         manifest['dependencies'] = {"mbed-events": "*"}
-        manifest['build']['libLDFMode'] = "chain+"
+    
+    manifest['build']['libLDFMode'] = "chain+"
 
     return manifest
 
