@@ -235,3 +235,5 @@ if MBED_RTOS:
         CustomLibBuilder(env, join(FRAMEWORK_DIR, rtos_config.get("dir")),
                          get_dynamic_manifest("rtos", rtos_config))
     ])
+
+    env.Append(LIB_DEPS=["mbed-rtos"])
