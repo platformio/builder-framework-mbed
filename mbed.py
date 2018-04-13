@@ -112,6 +112,7 @@ env.Replace(
     CCFLAGS=mbed_config.get("build_flags").get("common"),
     CFLAGS=mbed_config.get("build_flags").get("c"),
     CXXFLAGS=mbed_config.get("build_flags").get("cxx"),
+    LINKPPFLAGS=mbed_config.get("build_flags").get("ld"),
     LINKFLAGS=mbed_config.get("build_flags").get("ld"),
     LIBS=mbed_config.get("syslibs"))
 
@@ -202,8 +203,7 @@ linker_script = env.Command(
     join("$BUILD_DIR",
          "%s.link_script.ld" % basename(env.get("LDSCRIPT_PATH"))),
     env.get("LDSCRIPT_PATH"),
-    env.VerboseAction("arm-none-eabi-cpp -E -P %s $SOURCE -o $TARGET" %
-                      " ".join(mbed_config.get("build_flags").get("ld")),
+    env.VerboseAction("arm-none-eabi-cpp -E -P $LINKPPFLAGS $SOURCE -o $TARGET",
                       "Generating LD script $TARGET"))
 
 env.Depends("$BUILD_DIR/$PROGNAME$PROGSUFFIX", linker_script)
