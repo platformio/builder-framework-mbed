@@ -151,10 +151,6 @@ if MBED_RTOS:
 libs = mbed_config.get("libs").copy()
 libs.update(mbed_config.get("features"))
 
-if "PIO_FRAMEWORK_MBED_FILESYSTEM_PRESENT" in env.Flatten(
-        env.get("CPPDEFINES", [])):
-    env.Append(CPPDEFINES=["MBED_CONF_FILESYSTEM_PRESENT"])
-
 #
 # Process Core files from framework
 #
