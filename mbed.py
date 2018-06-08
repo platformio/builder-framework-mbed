@@ -90,7 +90,7 @@ def get_dynamic_manifest(name, config, extra_inc_dirs=[]):
 
     if name == "LWIP":
         manifest['dependencies'] = {"mbed-events": "*"}
-    
+
     manifest['build']['libLDFMode'] = "chain+"
 
     return manifest
@@ -198,9 +198,11 @@ if not env.get("LDSCRIPT_PATH"):
 linker_script = env.Command(
     join("$BUILD_DIR",
          "%s.link_script.ld" % basename(env.get("LDSCRIPT_PATH"))),
-    env.get("LDSCRIPT_PATH"),
-    env.VerboseAction("arm-none-eabi-cpp -E -P $LINKPPFLAGS $SOURCE -o $TARGET",
-                      "Generating LD script $TARGET"))
+    "$LDSCRIPT_PATH",
+    env.VerboseAction(
+        '%s -E -P $LINKPPFLAGS "$SOURCE" -o $TARGET' %
+        env.subst("$GDB").replace("-gdb", "-cpp"),
+        "Generating LD script $TARGET"))
 
 env.Depends("$BUILD_DIR/$PROGNAME$PROGSUFFIX", linker_script)
 env.Replace(LDSCRIPT_PATH=linker_script)
