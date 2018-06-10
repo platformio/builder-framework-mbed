@@ -148,10 +148,19 @@ if MBED_RTOS:
 libs = mbed_config.get("libs").copy()
 libs.update(mbed_config.get("features"))
 
-if "PIO_FRAMEWORK_MBED_FILESYSTEM_PRESENT" in env.Flatten(
-        env.get("CPPDEFINES", [])):
-    env.Append(CPPDEFINES=["MBED_CONF_FILESYSTEM_PRESENT"])
+#
+# Process Core files from framework
+#
 
+env.Append(CPPPATH=[
+    join(FRAMEWORK_DIR, d) for d in mbed_config.get("core").get("inc_dirs")
+])
+
+env.Append(CPPPATH=[
+    FRAMEWORK_DIR,
+    join(FRAMEWORK_DIR, "platformio", "variants", variant)
+])
+    
 # Add RTOS library only when a user requested it
 if MBED_RTOS:
     rtos_config = mbed_config.get("libs").get("rtos")
@@ -178,19 +187,6 @@ for lib, lib_config in libs.items():
                        join(FRAMEWORK_DIR, lib_config.get("dir")),
                        get_dynamic_manifest(lib, lib_config, extra_includes))
     ])
-
-#
-# Process Core files from framework
-#
-
-env.Append(CPPPATH=[
-    join(FRAMEWORK_DIR, d) for d in mbed_config.get("core").get("inc_dirs")
-])
-
-env.Append(CPPPATH=[
-    FRAMEWORK_DIR,
-    join(FRAMEWORK_DIR, "platformio", "variants", variant)
-])
 
 # If RTOS is enabled then some of the files from Core depdend on it
 if MBED_RTOS:
