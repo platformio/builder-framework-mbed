@@ -155,9 +155,15 @@ libs.update(mbed_config.get("features"))
 # Process Core files from framework
 #
 
-env.Append(CPPPATH=[
-    join(FRAMEWORK_DIR, d) for d in mbed_config.get("core").get("inc_dirs")
-])
+env.Append(
+    CPPPATH=[
+        join(FRAMEWORK_DIR, d) for d in mbed_config.get("core").get("inc_dirs")
+    ],
+
+    LIBS=[
+        env.File(join(FRAMEWORK_DIR, d)) for d in mbed_config.get("core").get("libraries")
+    ]
+)
 
 env.Append(CPPPATH=[
     FRAMEWORK_DIR,
