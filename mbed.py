@@ -206,7 +206,7 @@ linker_script = env.Command(
          "%s.link_script.ld" % basename(env.get("LDSCRIPT_PATH"))),
     "$LDSCRIPT_PATH",
     env.VerboseAction(
-        '%s -E -P $LINKPPFLAGS "$SOURCE" -o $TARGET' %
+        '%s -E -P $LINKPPFLAGS $SOURCE -o $TARGET' %
         env.subst("$GDB").replace("-gdb", "-cpp"),
         "Generating LD script $TARGET"))
 
