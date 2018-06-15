@@ -160,7 +160,7 @@ env.Append(CPPPATH=[
     FRAMEWORK_DIR,
     join(FRAMEWORK_DIR, "platformio", "variants", variant)
 ])
-    
+
 # Add RTOS library only when a user requested it
 if MBED_RTOS:
     rtos_config = mbed_config.get("libs").get("rtos")
@@ -225,7 +225,7 @@ linker_script = env.Command(
          "%s.link_script.ld" % basename(env.get("LDSCRIPT_PATH"))),
     "$LDSCRIPT_PATH",
     env.VerboseAction(
-        '%s -E -P $LINKPPFLAGS "$SOURCE" -o $TARGET' %
+        '%s -E -P $LINKPPFLAGS $SOURCE -o $TARGET' %
         env.subst("$GDB").replace("-gdb", "-cpp"),
         "Generating LD script $TARGET"))
 
