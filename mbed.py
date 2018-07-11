@@ -196,7 +196,10 @@ if "nordicnrf5" in env.get("PIOPLATFORM"):
 # Generate linker script
 #
 
-env.Replace(LDSCRIPT_PATH=join(FRAMEWORK_DIR, mbed_config.get("ldscript")))
+if isfile(join(env.PioPlatform().get_dir(), "ldscripts", env.BoardConfig().get("build.ldscript", ""))):
+    env.Replace(LDSCRIPT_PATH=join(env.PioPlatform().get_dir(), "ldscripts", env.BoardConfig().get("build.ldscript")))
+else:
+    env.Replace(LDSCRIPT_PATH=join(FRAMEWORK_DIR, mbed_config.get("ldscript")))
 if not env.get("LDSCRIPT_PATH"):
     sys.stderr.write("Cannot find linker script for your board!\n")
     env.Exit(1)
