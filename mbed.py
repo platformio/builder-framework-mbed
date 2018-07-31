@@ -99,14 +99,18 @@ mbed_config = get_mbed_config(variant)
 
 env.Replace(
     AS="$CC",
-    ASCOM="$ASPPCOM",
+    ASCOM="$ASPPCOM"
+)
+
+env.Append(
     ASFLAGS=mbed_config.get("build_flags").get("asm") +
     mbed_config.get("build_flags").get("common"),
     CCFLAGS=mbed_config.get("build_flags").get("common"),
     CFLAGS=mbed_config.get("build_flags").get("c"),
     CXXFLAGS=mbed_config.get("build_flags").get("cxx"),
     LINKFLAGS=mbed_config.get("build_flags").get("ld"),
-    LIBS=mbed_config.get("syslibs"))
+    LIBS=mbed_config.get("syslibs")
+)
 
 symbols = []
 for s in mbed_config.get("symbols"):
@@ -117,22 +121,11 @@ for s in mbed_config.get("symbols"):
     else:
         symbols.append(s)
 
-env.Replace(CPPDEFINES=symbols)
-
 env.Append(
+    CPPDEFINES=symbols,
     CCFLAGS="-w",
-
-    # temporary fix for the linker issue
-    LIBS=["c", "stdc++"]
+    LIBS=["c", "stdc++"]  # temporary fix for the linker issue
 )
-
-# restore external build flags
-if "build.extra_flags" in env.BoardConfig():
-    env.ProcessFlags(env.BoardConfig().get("build.extra_flags"))
-# remove base flags
-env.ProcessUnFlags(env.get("BUILD_UNFLAGS"))
-# apply user flags
-env.ProcessFlags(env.get("BUILD_FLAGS"))
 
 MBED_RTOS = "PIO_FRAMEWORK_MBED_RTOS_PRESENT" in env.Flatten(
     env.get("CPPDEFINES", []))
