@@ -96,21 +96,25 @@ def get_dynamic_manifest(name, config, extra_inc_dirs=[]):
     if name == "netsocket":
         manifest['build']['flags'].extend(["-DMBED_CONF_EVENTS_PRESENT"])
         manifest['dependencies'] = {
-            "mbed-LWIP": "*",
+            "mbed-lwipstack": "*",
             "mbed-events": "*"
         }
 
     # arm_random_module_init
     if name == "mbed-client-randlib":
-        manifest['dependencies'] = {"mbed-nanostack": "*"}
+        manifest['dependencies'] = {"mbed-nanostack-interface": "*"}
+
+    if name == "nfc":
+        manifest['dependencies'] = {"mbed-events": "*"}
 
     return manifest
 
 
-def process_global_lib(libname, mbed_config):
-    if not libname or not mbed_config:
+def process_global_lib(libname, lib_configs):
+    if not libname or not lib_configs:
         return
-    lib_config = mbed_config.get("libs").get(libname, {})
+
+    lib_config = lib_configs.get(libname, {})
     if not lib_config:
         return
     lib_includes = [
@@ -169,6 +173,7 @@ env.Append(
 
 # There is no difference in processing between lib and feature
 libs = mbed_config.get("libs").copy()
+libs.update(mbed_config.get("components"))
 libs.update(mbed_config.get("features"))
 libs.update(mbed_config.get("frameworks"))
 
@@ -195,15 +200,20 @@ MBED_RTOS = "PIO_FRAMEWORK_MBED_RTOS_PRESENT" in env.Flatten(
     env.get("CPPDEFINES", []))
 
 if MBED_RTOS:
+    if not libs.get("rtos"):
+        print "Warning! This board doesn't support Mbed OS!"
     env.Append(CPPDEFINES=["MBED_CONF_RTOS_PRESENT"])
-    process_global_lib("rtos", mbed_config)
+    process_global_lib("rtos", libs)
 
 MBED_EVENTS = "PIO_FRAMEWORK_MBED_EVENTS_PRESENT" in env.Flatten(
     env.get("CPPDEFINES", []))
 
 if MBED_EVENTS:
     env.Append(CPPDEFINES=["MBED_CONF_EVENTS_PRESENT"])
-    process_global_lib("events", mbed_config)
+    process_global_lib("events", libs)
+
+if "FEATURE_CRYPTOCELL310" in env.Flatten(env.get("CPPDEFINES", [])):
+    process_global_lib("FEATURE_CRYPTOCELL310", libs)
 
 core_src_files = mbed_config.get("core").get("s_sources") + mbed_config.get(
     "core").get("c_sources") + mbed_config.get("core").get("cpp_sources")
@@ -248,11 +258,10 @@ env.Replace(LDSCRIPT_PATH=linker_script)
 #
 
 for lib, lib_config in libs.items():
+    if not lib_config:
+        continue
     extra_includes = []
     env.Append(EXTRA_LIB_BUILDERS=[
         CustomLibBuilder(env, join(FRAMEWORK_DIR, lib_config.get("dir")),
                          get_dynamic_manifest(lib, lib_config, extra_includes))
     ])
-
-    if lib == "mbedtls":
-        env.Append(LIB_DEPS=["mbed-mbedtls"])
