@@ -133,6 +133,7 @@ variants_remap = util.load_json(
 board_type = env.subst("$BOARD")
 variant = variants_remap[
     board_type] if board_type in variants_remap else board_type.upper()
+variant = env.BoardConfig().get("build.variant", variant)
 
 mbed_config = get_mbed_config(variant)
 
