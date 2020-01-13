@@ -26,6 +26,7 @@ from platformio.builder.tools.piolib import PlatformIOLibBuilder
 
 env = DefaultEnvironment()
 platform = env.PioPlatform()
+board = env.BoardConfig()
 
 FRAMEWORK_DIR = platform.get_package_dir("framework-mbed")
 assert isdir(FRAMEWORK_DIR)
@@ -119,7 +120,7 @@ def get_mbed_target(board_type):
         join(FRAMEWORK_DIR, "platformio", "variants_remap.json"))
     variant = variants_remap[
         board_type] if board_type in variants_remap else board_type.upper()
-    return variant
+    return board.get("build.mbed_variant", variant)
 
 
 def get_build_profile(cpp_defines):
@@ -233,26 +234,23 @@ if "nordicnrf5" in env.get("PIOPLATFORM"):
 # Linker requires preprocessing with link flags
 #
 
-ldscript = None
-if configuration.get("ldscript", [])[0]:
-    ldscript = join(FRAMEWORK_DIR, configuration.get("ldscript")[0])
-elif env.get("LDSCRIPT_PATH", None):
-    ldscript = env.subst(env.get("LDSCRIPT_PATH"))
-else:
-    print ("Default Linker script is not found!")
+if not board.get("build.ldscript", ""):
+    ldscript = join(FRAMEWORK_DIR, configuration.get("ldscript", [])[0] or "")
+    if board.get("build.mbed.ldscript", ""):
+        ldscript = env.subst(board.get("build.mbed.ldscript"))
+    if isfile(ldscript):
+        linker_script = env.Command(
+            join("$BUILD_DIR", "%s.link_script.ld" % basename(ldscript)),
+            ldscript,
+            env.VerboseAction(
+                '%s -E -P $LINKFLAGS $SOURCE -o $TARGET' %
+                env.subst("$GDB").replace("-gdb", "-cpp"),
+                "Generating LD script $TARGET"))
 
-if ldscript:
-    linker_script = env.Command(
-        join("$BUILD_DIR",
-             "%s.link_script.ld" % basename(ldscript)),
-        ldscript,
-        env.VerboseAction(
-            '%s -E -P $LINKFLAGS $SOURCE -o $TARGET' %
-            env.subst("$GDB").replace("-gdb", "-cpp"),
-            "Generating LD script $TARGET"))
-
-    env.Depends("$BUILD_DIR/$PROGNAME$PROGSUFFIX", linker_script)
-    env.Replace(LDSCRIPT_PATH=linker_script)
+        env.Depends("$BUILD_DIR/$PROGNAME$PROGSUFFIX", linker_script)
+        env.Replace(LDSCRIPT_PATH=linker_script)
+    else:
+        print ("Warning! Couldn't find linker script file!")
 
 #
 # Compile core part
