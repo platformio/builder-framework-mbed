@@ -17,7 +17,7 @@ import sys
 import warnings
 from shutil import copyfile
 from os import makedirs
-from os.path import basename, isdir, isfile, join
+from os.path import basename, isabs, isdir, isfile, join
 
 from SCons.Script import COMMAND_LINE_TARGETS, Builder, DefaultEnvironment
 
@@ -93,7 +93,9 @@ def get_dynamic_manifest(lib_path):
 
     config = lib_processor.extract_project_info(generate_config=False)
     src_files = _fix_paths(config.get("src_files"), lib_path)
-    inc_dirs = _fix_paths(config.get("inc_dirs"), lib_path)
+
+    inc_dirs = [join(FRAMEWORK_DIR, d).replace("\\", "/") for d in config.get(
+        "inc_dirs") if not isabs(d)]
 
     name = basename(lib_path)
 
@@ -106,8 +108,14 @@ def get_dynamic_manifest(lib_path):
         }
     }
 
-    manifest['build']['flags'].extend(
-        ['-I "%s"' % d for d in inc_dirs])
+    if inc_dirs:
+        extra_script = join(env.subst("$BUILD_DIR"), name + "_extra_script.py")
+        manifest['build']['extraScript'] = extra_script.replace("\\", "/")
+        if not isfile(extra_script):
+            with open(extra_script, "w") as fp:
+                fp.write("Import('env')\n")
+                fp.write(
+                    "env.Prepend(CPPPATH=[%s])" % ("'" + "', '".join(inc_dirs) + "'"))
 
     for f in src_files:
         manifest['build']['srcFilter'].extend([" +<%s>" % f])
