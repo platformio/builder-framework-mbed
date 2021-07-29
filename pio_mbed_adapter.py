@@ -79,8 +79,8 @@ class PlatformioMbedAdapter(object):
     def get_target_config(self):
         target_info = TARGET_MAP.get(self.target, "")
         if not target_info:
-            sys.stderr.write(
-                "Failed to extract info for %s target\n", self.target)
+            sys.stderr.write("Failed to extract configuration for %s.\n" % self.target)
+            sys.stderr.write("It might not be supported in the this Mbed release.\n")
             sys.exit(1)
 
         return target_info
@@ -101,7 +101,7 @@ class PlatformioMbedAdapter(object):
 
             result.append(s)
 
-        # Symbols need to be sorted to aboid recompilation
+        # Symbols need to be sorted to avoid recompilation
         result.sort()
         return result
 
@@ -193,6 +193,7 @@ class PlatformioMbedAdapter(object):
         #         error_msg = "The library src folder doesn't exist:%s", src_path
         #         raise Exception(error_msg)
 
+
         self.resources = MbedResourcesFixedPath(self.framework_path, self.notify).scan_with_toolchain(
             self.src_paths, self.toolchain, dependencies_paths,
             inc_dirs=inc_dirs)
@@ -214,7 +215,7 @@ class PlatformioMbedAdapter(object):
             "inc_dirs": self.resources.inc_dirs,
             "ldscript": [self.resources.linker_script],
             "objs": self.resources.objects,
-            "build_flags": self.toolchain.flags,
+            "build_flags": {k: sorted(v) for k, v in self.toolchain.flags.items()},
             "libs": [basename(l) for l in self.resources.libraries],
             "lib_paths": self.resources.lib_dirs,
             "syslibs": self.toolchain.sys_libs,
