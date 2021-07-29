@@ -32,7 +32,7 @@ def exec_cmd(*args, **kwargs):
 def build_packages():
 
     packages = (
-        "intelhex==2.2.1",
+        "intelhex==2.3",
         "jinja2==2.10",
         "pyelftools==0.25",
         "beautifulsoup4==4.7.1",
