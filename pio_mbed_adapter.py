@@ -29,6 +29,9 @@ from tools.utils import generate_update_filename
 from pio_mock_notifier import PlatformioFakeNotifier
 from pio_resources_fixed_path import MbedResourcesFixedPath
 
+from pio_mbedignore_loader import PioMbedignoreLoader
+
+
 # A handy global as PlatformIO supports only GCC toolchain
 TOOLCHAIN_NAME = "GCC_ARM"
 # Possible profiles: debug, develop, release
@@ -193,8 +196,15 @@ class PlatformioMbedAdapter(object):
         #         error_msg = "The library src folder doesn't exist:%s", src_path
         #         raise Exception(error_msg)
 
-
-        self.resources = MbedResourcesFixedPath(self.framework_path, self.notify).scan_with_toolchain(
+        mbedignore_path_in_project_root_dir = os.path.join(
+            backup_cwd, '.mbedignore')
+        mbedignore_patterns_from_project_root_dir = PioMbedignoreLoader(
+            mbedignore_path_in_project_root_dir).collect_ignore_patterns()
+        mbed_resources_fixed_path = MbedResourcesFixedPath(
+            self.framework_path, self.notify)
+        mbed_resources_fixed_path.add_ignore_patterns(
+            '.', '.', mbedignore_patterns_from_project_root_dir)
+        self.resources = mbed_resources_fixed_path.scan_with_toolchain(
             self.src_paths, self.toolchain, dependencies_paths,
             inc_dirs=inc_dirs)
 
