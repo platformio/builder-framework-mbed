@@ -47,6 +47,7 @@ class PioMbedignoreLoader(MbedIgnoreSet):
         self._collect_patterns_from_mbedignore_file_and_save_them()
         self._remove_mbed_framework_prefix_from_patterns()
         self._remove_first_directory_name_from_patterns()
+        self._remove_match_all_patterns()
         self._is_patterns_collected = True
         return self._ignore_patterns
 
@@ -72,3 +73,10 @@ class PioMbedignoreLoader(MbedIgnoreSet):
             self._ignore_patterns)
         self._ignore_patterns = list(
             paths_without_first_directory_name_iterator)
+
+    def _remove_match_all_patterns(self):
+        paths_without_match_all_patterns_iterator = filter(
+            lambda p: p != '*',
+            self._ignore_patterns)
+        self._ignore_patterns = list(
+            paths_without_match_all_patterns_iterator)
