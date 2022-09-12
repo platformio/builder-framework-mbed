@@ -43,7 +43,14 @@ def build_packages():
     )
 
     target_dir = join(
-        pio_tools, "package_deps", "py%s" % sys.version_info.major)
+        pio_tools,
+        "package_deps",
+        "py%d%s"
+        % (
+            sys.version_info.major,
+            "_old" if sys.version_info < (3, 9) else "",
+        ),
+    )
     if isdir(target_dir):
         rmtree(target_dir)
     makedirs(target_dir)

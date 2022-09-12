@@ -33,10 +33,20 @@ assert os.path.isdir(FRAMEWORK_DIR)
 
 # Be sure that the packages and tool as paths are in the search path
 warnings.simplefilter("ignore")
+
+# Python versions <=3.8 requires a different set  of packages that
+# are not compatible with Python >=3.10. More details:
+# - https://github.com/platformio/builder-framework-mbed/issues/27
+# - https://github.com/platformio/builder-framework-mbed/issues/28
+# - https://github.com/platformio/builder-framework-mbed/pull/31
 sys.path.insert(
     0,
     os.path.join(
-        FRAMEWORK_DIR, "platformio", "package_deps", "py%d" % sys.version_info.major
+        FRAMEWORK_DIR,
+        "platformio",
+        "package_deps",
+        "py%d%s"
+        % (sys.version_info.major, "_old" if sys.version_info < (3, 9) else ""),
     ),
 )
 sys.path.insert(1, FRAMEWORK_DIR)
