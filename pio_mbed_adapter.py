@@ -27,7 +27,7 @@ from tools.targets import TARGET_MAP, Target, update_target_data
 from tools.utils import generate_update_filename
 
 from pio_mock_notifier import PlatformioFakeNotifier
-from pio_resources_fixed_path import MbedResourcesFixedPath
+from pio_resources_fixed_path import MbedResourcesFixedPath, MbedIgnoreSetFixedPath
 
 # A handy global as PlatformIO supports only GCC toolchain
 TOOLCHAIN_NAME = "GCC_ARM"
@@ -193,16 +193,30 @@ class PlatformioMbedAdapter(object):
         #         error_msg = "The library src folder doesn't exist:%s", src_path
         #         raise Exception(error_msg)
 
-
-        self.resources = MbedResourcesFixedPath(self.framework_path, self.notify).scan_with_toolchain(
-            self.src_paths, self.toolchain, dependencies_paths,
-            inc_dirs=inc_dirs)
+        self.resources = MbedResourcesFixedPath(
+            self.framework_path, self.notify
+        ).scan_with_toolchain(
+            self.src_paths, self.toolchain, dependencies_paths, inc_dirs=inc_dirs
+        )
 
         src_files = (
-            self.resources.s_sources +
-            self.resources.c_sources +
-            self.resources.cpp_sources
+            self.resources.s_sources
+            + self.resources.c_sources
+            + self.resources.cpp_sources
         )
+
+        project_dir = backup_cwd
+        ignorefile = join(project_dir, ".mbedignore")
+        if os.path.isfile(ignorefile):
+            # Exclude sources according to ignore patterns loaded from .mbedignore
+            ignoreset = MbedIgnoreSetFixedPath()
+            ignoreset.add_mbedignore(".", ignorefile)
+
+            src_files = [
+                file
+                for file in src_files
+                if not ignoreset.is_ignored(file)
+            ]
 
         if generate_config:
             self.generate_mbed_config_file()

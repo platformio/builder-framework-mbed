@@ -14,7 +14,7 @@
 
 from os.path import basename, join
 
-from tools.resources import Resources
+from tools.resources import Resources, MbedIgnoreSet
 
 
 class MbedResourcesFixedPath(Resources):
@@ -48,3 +48,20 @@ class MbedResourcesFixedPath(Resources):
             result.append(path)
 
         return result
+
+
+class MbedIgnoreSetFixedPath(MbedIgnoreSet):
+    def __init__(self):
+        super().__init__()
+
+    def add_mbedignore(self, in_name, filepath):
+        with open(filepath) as f:
+            patterns = [
+                line.strip()
+                .replace("mbed-os/", "", 1)
+                .replace("framework-mbed/", "", 1)
+                for line in f
+                if line.strip() != "" and not line.startswith("#")
+            ]
+
+            self.add_ignore_patterns(in_name, patterns)
