@@ -124,7 +124,7 @@ def get_inc_flags():
         if not os.path.isabs(d)
     ]
 
-    if "idedata" in COMMAND_LINE_TARGETS:
+    if env.IsIntegrationDump():
         return {"CPPPATH": inc_paths}
 
     # Framework adds a great number of include paths which requires
